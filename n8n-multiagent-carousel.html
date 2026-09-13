@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-agent systems in n8n — Carousel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--sage:#7FA37A;--rose:#C97B7B;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 34px}
+.head{text-align:center;margin-bottom:16px}
+.head .eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+.head h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;margin-top:5px}
+.frame{width:100%;max-width:460px}
+.progress{height:4px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.progress i{display:block;height:100%;background:var(--clay);border-radius:3px;transition:width .4s cubic-bezier(.3,.8,.3,1)}
+.track{position:relative;width:100%;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(122,90,64,.16);touch-action:pan-y}
+.slide{position:absolute;inset:0;background:var(--card);padding:60px 30px 32px;display:flex;flex-direction:column;
+  justify-content:center;opacity:0;transform:translateX(28px) scale(.98);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.slide .num{position:absolute;top:30px;left:30px;font-family:'Fraunces',serif;font-weight:900;font-size:.88rem;color:var(--clay)}
+.slide h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;line-height:1.14;letter-spacing:-.015em;margin-bottom:11px}
+.slide h2 .ac{color:var(--clay)}
+.slide p{font-size:.93rem;line-height:1.6;font-weight:600;color:#6B5647;max-width:32ch}
+.slide p b{color:var(--ink)}
+.slide .foot{margin-top:15px;padding-top:12px;border-top:1.5px dashed var(--line);font-size:.75rem;font-weight:800;color:var(--dim)}
+.slide svg{display:block;margin:0 0 12px}
+.ba{display:grid;gap:9px;margin-bottom:12px}
+.ba div{border-radius:12px;padding:11px 13px;font-size:.83rem;line-height:1.5}
+.ba .bad{background:#F7EAEA;border-left:4px solid var(--rose)}
+.ba .good{background:#EEF3EA;border-left:4px solid var(--sage)}
+.ba .lb{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.ba .bad .lb{color:var(--rose)}.ba .good .lb{color:var(--sage)}
+.ba code{font-family:var(--mono);font-size:.78rem;color:var(--ink)}
+.rows{display:grid;gap:7px;margin-bottom:4px}
+.row{display:flex;align-items:center;gap:11px;background:var(--bg);border-radius:11px;padding:9px 12px}
+.row .b{width:24px;height:24px;border-radius:7px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:.76rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.row .tx{font-size:.83rem;font-weight:700;line-height:1.3}
+.row .tx s{display:block;font-size:.71rem;font-weight:700;color:var(--dim);text-decoration:none;margin-top:1px}
+.code{font-family:var(--mono);font-size:.75rem;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:12px 14px;line-height:1.8;margin:2px 0 11px;overflow-x:auto;white-space:pre-wrap}
+.code .kw{color:#E8B583}.code .cm{color:#9A8776}
+.slide.cover{background:var(--clay);color:#FFF6E9;justify-content:center;align-items:flex-start}
+.slide.cover .kick{font-size:.7rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.85;margin-bottom:14px}
+.slide.cover h2{font-size:2.3rem;color:#FFF6E9;margin-bottom:12px}
+.slide.cover p{color:#F6E5D3}
+.slide.cover .swipe{position:absolute;bottom:30px;left:30px;font-size:.8rem;font-weight:800;opacity:.9}
+.covart{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;margin-bottom:16px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.covart[hidden]{display:none}
+.slide.end{background:var(--ink);color:#F7EFE2;justify-content:center}
+.slide.end h2{color:#F7EFE2;font-size:1.9rem}
+.slide.end p{color:#D9C8B8}
+.slide.end .tag{display:inline-block;margin-top:16px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:1rem;padding:11px 20px;border-radius:12px}
+.slide.end .by{margin-top:13px;font-size:.7rem;font-weight:800;letter-spacing:.1em;color:#A08B79}
+.controls{display:flex;align-items:center;gap:14px;margin-top:16px;justify-content:center}
+.nav{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--clay);
+  font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.nav:hover:not(:disabled){background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.nav:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer;transition:all .25s}
+.dot.on{background:var(--clay);width:22px;border-radius:5px}
+.hintline{margin-top:12px;text-align:center;font-size:.7rem;font-weight:700;color:var(--dim);letter-spacing:.06em}
+.pdfrow{margin-top:10px;text-align:center}
+.pdfbtn{font-family:'Nunito',system-ui,sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 15px;cursor:pointer;transition:all .15s}
+.pdfbtn:hover{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.credit{margin-top:10px;text-align:center;font-size:.66rem;font-weight:700;color:var(--dim);letter-spacing:.08em}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(122,90,64,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:var(--card);border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.81rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.72rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-clay .in{background:var(--clay);color:#FFF6E9}
+.t-sage .in{background:var(--sage);color:#F4F8F1}
+.t-ink .in{background:var(--ink);color:#F7EFE2}
+.t-cream .in{background:var(--card);color:var(--clay-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+body,button,.dot,.nav{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Cpath d='M3 9h18M9 9v11M15 9v11' stroke='%23B4785B' stroke-width='1.6'/%3E%3C/svg%3E") 4 3, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--clay);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.slide{transition:none}.sticker .in{animation:none}}
+@media print{
+  @page{margin:12mm}
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  body{background:#fff;display:block;min-height:0;padding:0;cursor:auto}
+  .sticker,.trail,.controls,.dots,.nav,.progress,.hintline,.pdfrow{display:none !important}
+  .head{margin:0 0 7mm}
+  .frame{max-width:170mm;width:100%;margin:0 auto}
+  .track{position:static;display:block;width:100%;height:auto;aspect-ratio:auto;
+    overflow:visible;border-radius:0;box-shadow:none;touch-action:auto}
+  .slide{position:relative;inset:auto;width:100%;aspect-ratio:1/1;margin:0 auto;
+    opacity:1 !important;transform:none !important;pointer-events:auto;transition:none;
+    border:1px solid var(--line);border-radius:20px;
+    page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  .slide.cover,.slide.end{border:none}
+  .slide:last-child{page-break-after:auto;break-after:auto}
+  .credit{margin-top:6mm;page-break-before:avoid}
+}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🧠</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🔌</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🧩</span></div>
+<div class="sticker st-t sm t-clay" style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">Tool port</span></div>
+<div class="sticker st-t sm t-sage" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">gpt-4o-mini</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">🔍</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">✉️</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚙️</span></div>
+<div class="sticker st-t sm t-cream" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">$json.chatInput</span></div>
+<div class="sticker st-t sm t-ink st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">swipe →</span></div>
+
+<div class="head">
+  <div class="eyebrow">Daily Drop · Carousel</div>
+  <h1>Multi-agent systems in n8n</h1>
+</div>
+
+<div class="frame">
+  <div class="progress"><i id="bar"></i></div>
+  <div class="track" id="track">
+
+    <section class="slide cover on">
+      <img class="covart" id="covart" alt="" hidden>
+      <div class="kick">Be10x · Daily Drop</div>
+      <h2>One question.<br>A team of<br>AI agents.</h2>
+      <p>One report in your inbox — built in n8n, with one Code node.</p>
+      <div class="swipe">Swipe →</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">01</div>
+      <svg width="290" height="74" viewBox="0 0 290 74" role="img" aria-label="Three nodes joined left to right by solid connections">
+        <text x="0" y="9" font-family="Nunito" font-size="8.5" font-weight="800" fill="#A08B79">MAIN LINE — READ IT LEFT TO RIGHT</text>
+        <rect x="2" y="20" width="82" height="28" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.8"/>
+        <text x="43" y="38" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Trigger</text>
+        <rect x="104" y="20" width="82" height="28" rx="9" fill="#B4785B"/>
+        <text x="145" y="38" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#FFF6E9">AI Agent</text>
+        <rect x="206" y="20" width="82" height="28" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.8"/>
+        <text x="247" y="38" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Gmail</text>
+        <path d="M86 34h10M188 34h10" stroke="#E7D8C4" stroke-width="3"/>
+        <path d="M96 30l8 4-8 4z" fill="#E7D8C4"/><path d="M198 30l8 4-8 4z" fill="#E7D8C4"/>
+        <text x="0" y="68" font-family="Nunito" font-size="8.5" font-weight="800" fill="#A08B79">ONE NODE = ONE JOB · ONE RUN = ONE EXECUTION</text>
+      </svg>
+      <h2>Nodes on a<br><span class="ac">canvas</span></h2>
+      <p>A node does one job and hands its data to the next. Every run is an <b>execution</b>, and n8n saves all of them.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">02</div>
+      <h2>Exactly one<br><span class="ac">trigger</span></h2>
+      <div class="code">When chat message received
+  → {{ $json.chatInput }}
+<span class="cm">// no trigger = nothing runs</span></div>
+      <p>The <b>Chat Trigger</b> is where a workflow starts. It catches the question and hands it down the line.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">03</div>
+      <svg width="290" height="104" viewBox="0 0 290 104" role="img" aria-label="An AI Agent node with input, output and three sub-node ports underneath">
+        <text x="0" y="9" font-family="Nunito" font-size="8" font-weight="800" fill="#A08B79">SOLID → MAIN LINE · DOTTED ↓ SUB-NODES</text>
+        <path d="M2 32h70" stroke="#E7D8C4" stroke-width="3"/><path d="M70 28l8 4-8 4z" fill="#E7D8C4"/>
+        <path d="M212 32h66" stroke="#E7D8C4" stroke-width="3"/><path d="M278 28l8 4-8 4z" fill="#E7D8C4"/>
+        <rect x="78" y="16" width="134" height="32" rx="10" fill="#B4785B"/>
+        <text x="145" y="36" text-anchor="middle" font-family="Nunito" font-size="11.5" font-weight="800" fill="#FFF6E9">AI Agent</text>
+        <rect x="100" y="45" width="10" height="6" rx="2" fill="#9A5F44"/>
+        <rect x="140" y="45" width="10" height="6" rx="2" fill="#9A5F44"/>
+        <rect x="180" y="45" width="10" height="6" rx="2" fill="#9A5F44"/>
+        <path d="M105 52C105 62 50 60 50 70" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <path d="M145 52v18" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <path d="M185 52C185 62 240 60 240 70" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <rect x="5" y="70" width="90" height="22" rx="7" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.6"/>
+        <text x="50" y="85" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="#4A3830">Chat Model</text>
+        <rect x="100" y="70" width="90" height="22" rx="7" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.6"/>
+        <text x="145" y="85" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="#4A3830">Memory</text>
+        <rect x="195" y="70" width="90" height="22" rx="7" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.6"/>
+        <text x="240" y="85" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="#4A3830">Tool</text>
+        <text x="50" y="101" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#C97B7B">required</text>
+        <text x="145" y="101" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#A08B79">optional</text>
+        <text x="240" y="101" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7FA37A">0 or many</text>
+      </svg>
+      <h2>The ports<br><span class="ac">underneath</span></h2>
+      <p>Input left, output right — plus a row of <b>sub-node ports</b> below. That row is the whole trick.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">04</div>
+      <h2>Three ports.<br>One is <span class="ac">required</span>.</h2>
+      <div class="rows">
+        <div class="row"><span class="b">1</span><span class="tx">Chat Model<s>the brain — gpt-4o-mini. Empty, and it won't run.</s></span></div>
+        <div class="row"><span class="b">2</span><span class="tx">Memory<s>Simple Memory keeps the earlier turns of the chat.</s></span></div>
+        <div class="row"><span class="b">3</span><span class="tx">Tool<s>SerpAPI, a Code tool — or another agent entirely.</s></span></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="num">05</div>
+      <div class="ba">
+        <div class="bad"><span class="lb">one agent, one prompt</span><code>news + charts + verdict + email</code></div>
+        <div class="good"><span class="lb">a team</span><code>one short job description each</code></div>
+      </div>
+      <h2>One prompt,<br><span class="ac">four jobs</span></h2>
+      <p>A jack of all trades goes deep on none of them — and one bad line poisons the whole answer.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">06</div>
+      <svg width="290" height="96" viewBox="0 0 290 96" role="img" aria-label="An orchestrator agent delegating to two specialist agents">
+        <rect x="80" y="4" width="130" height="30" rx="9" fill="#B4785B"/>
+        <text x="145" y="23" text-anchor="middle" font-family="Nunito" font-size="10" font-weight="800" fill="#FFF6E9">Orchestrator Agent</text>
+        <path d="M115 34C115 48 58 48 58 62" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <path d="M175 34C175 48 232 48 232 62" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <text x="82" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#A08B79">Tool</text>
+        <text x="208" y="52" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#A08B79">Tool</text>
+        <rect x="3" y="62" width="110" height="30" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/>
+        <text x="58" y="76" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="#4A3830">Fundamental</text>
+        <text x="58" y="87" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="#4A3830">Analysis Agent</text>
+        <rect x="177" y="62" width="110" height="30" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/>
+        <text x="232" y="76" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="#4A3830">Technical</text>
+        <text x="232" y="87" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="#4A3830">Analysis Agent</text>
+      </svg>
+      <h2>Promote one<br>to <span class="ac">manager</span></h2>
+      <p>The <b>Orchestrator Agent</b> delegates and merges. It never researches anything itself, and the two specialists never meet.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">07</div>
+      <h2>An agent can<br>be a <span class="ac">tool</span></h2>
+      <div class="code">Orchestrator Agent
+ └ Tool ▸ Fundamental Agent
+ └ Tool ▸ Technical Agent</div>
+      <p>Hang a second agent off the <b>Tool port</b> and it stops being a chat partner. It becomes a function you call.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">08</div>
+      <div class="ba">
+        <div class="bad"><span class="lb">vague — never gets picked</span><code>"Analysis tool."</code></div>
+        <div class="good"><span class="lb">specific — gets picked</span><code>"Company fundamentals: news, results, sentiment."</code></div>
+      </div>
+      <h2>The description<br>does the <span class="ac">calling</span></h2>
+      <p>The orchestrator chooses tools by reading their descriptions. Write a fuzzy one and yours is ignored.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">09</div>
+      <div class="code"><span class="cm">// "Analyze Infosys"</span>
+Fundamental → Bullish · deal wins
+Technical   → Neutral · resistance</div>
+      <h2>What to buy.<br><span class="ac">When</span> to buy.</h2>
+      <p>One specialist reads the business, the other reads the chart. The manager merges both into one summary.</p>
+      <div class="foot">Educational build — not financial advice.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">10</div>
+      <h2>The last<br><span class="ac">mile</span></h2>
+      <div class="code"><span class="cm">// Code in JavaScript</span>
+const html = `&lt;h2&gt;${title}&lt;/h2&gt;`;
+<span class="kw">return</span> [{ json: { html } }];</div>
+      <p>The Code node styles the report; Gmail sends it. Set <b>Message Type to HTML</b> or tags arrive raw.</p>
+    </section>
+
+    <section class="slide end">
+      <h2>Build the line<br>first.</h2>
+      <p>Trigger → agent → Code → Gmail. Get those four talking, then hang the sub-nodes underneath. Tomorrow: the system prompts that make the merge readable.</p>
+      <div><span class="tag">Follow for daily drops ❀</span></div>
+      <div class="by">Be10x · Eshmith Saideep</div>
+    </section>
+
+  </div>
+  <div class="controls">
+    <button class="nav" id="prev">←</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav" id="next">→</button>
+  </div>
+  <div class="hintline">swipe · arrow keys · tap the dots</div>
+  <div class="pdfrow"><button class="pdfbtn" id="pdf">Save as PDF</button></div>
+  <div class="credit">Be10x · Daily Drop · Eshmith Saideep</div>
+</div>
+<script>
+/* ===== paste your generated cover image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ================================================================= */
+if(HERO_IMAGE){const h=document.getElementById("covart");h.src=HERO_IMAGE;h.hidden=false;}
+const slides=[...document.querySelectorAll('.slide')],dots=document.getElementById('dots'),bar=document.getElementById('bar');
+const prev=document.getElementById('prev'),next=document.getElementById('next');let i=0;
+slides.forEach((_,k)=>{const b=document.createElement('button');b.className='dot'+(k?'':' on');
+  b.onclick=()=>go(k);dots.appendChild(b);});
+function go(k){i=Math.max(0,Math.min(slides.length-1,k));
+  slides.forEach((s,n)=>s.classList.toggle('on',n===i));
+  [...dots.children].forEach((d,n)=>d.classList.toggle('on',n===i));
+  bar.style.width=((i+1)/slides.length*100)+'%';prev.disabled=i===0;next.disabled=i===slides.length-1;}
+prev.onclick=()=>go(i-1);next.onclick=()=>go(i+1);
+addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);});
+let x0=null;const track=document.getElementById('track');
+track.addEventListener('pointerdown',e=>x0=e.clientX);
+track.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;
+  if(Math.abs(dx)>44)go(dx<0?i+1:i-1);x0=null;});
+go(0);
+document.getElementById('pdf').onclick=()=>window.print();
+(function(){const G=['→','↺','{}','⊳','⇄','●'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>

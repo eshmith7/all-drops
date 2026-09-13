@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-agent systems in n8n — Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--deep:#9A5F44;--sage:#7FA37A;--sage-bg:#EEF3EA;--rose:#C97B7B;--rose-bg:#F7EAEA;
+  --sun:#E8B95C;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding:0 30px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(247,239,226,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 18px;scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+nav a{flex:none;text-decoration:none;font-size:.76rem;font-weight:800;color:var(--dim);
+  padding:7px 12px;border-radius:9px;white-space:nowrap}
+nav a:hover{background:var(--card);color:var(--ink)}
+nav a.on{background:var(--clay);color:#FFF6E9}
+
+/* hero */
+header{padding:82px 0 62px;text-align:center}
+.kick{font-size:.68rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:3rem;line-height:1.05;margin:12px 0}
+h1 .ac{color:var(--clay)}
+header p{color:#6B5647;font-weight:600;font-size:1.02rem;max-width:52ch;margin:0 auto}
+
+/* sections */
+section{padding:76px 0 82px;border-top:1px solid var(--line);position:relative}
+section::before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+  width:10px;height:10px;border-radius:50%;background:var(--clay);
+  box-shadow:0 0 0 6px var(--bg)}
+.num{font-family:var(--mono);font-size:.78rem;color:var(--clay);font-weight:700;
+  letter-spacing:.14em;display:inline-block;background:#FBF3E7;border:1px solid var(--line);
+  border-radius:8px;padding:4px 10px;margin-bottom:10px}
+h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.85rem;line-height:1.14;margin:4px 0 12px}
+.lede{color:#6B5647;font-weight:600;font-size:1rem;margin-bottom:30px;max-width:66ch}
+.try{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--sun);color:#5C4210;border-radius:6px;padding:4px 10px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;
+  box-shadow:0 6px 22px rgba(122,90,64,.07)}
+.take{margin-top:22px;border-left:3px solid var(--clay);background:#FBF3E7;border-radius:0 12px 12px 0;
+  padding:12px 15px;font-size:.9rem;color:#6B5647}
+.take b{color:var(--deep)}
+
+/* controls */
+label.f{display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;color:var(--dim);margin:18px 0 8px}
+label.f b{font-family:var(--mono);color:var(--clay)}
+input[type=range]{width:100%;height:26px;-webkit-appearance:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid var(--clay);margin-top:-7px;box-shadow:0 2px 5px rgba(122,90,64,.25)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--clay)}
+textarea,input[type=text]{width:100%;font-family:var(--mono);font-size:.86rem;color:var(--ink);
+  background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:11px 13px;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--clay)}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--clay);color:#FFF6E9;border:none;border-radius:11px;padding:11px 18px;
+  font-weight:800;font-size:.88rem}
+.btn:hover{background:var(--deep)}
+.btn.ghost{background:none;color:var(--clay);border:1.5px solid var(--clay)}
+.row{display:flex;gap:11px;flex-wrap:wrap;margin-top:20px}
+
+/* tokens */
+.tok{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.tok span{font-family:var(--mono);font-size:.8rem;background:var(--bg);border:1.5px solid var(--clay);
+  border-radius:7px;padding:4px 8px}
+.tok span.sp{color:var(--dim);border-style:dashed}
+.tok span.out{opacity:.32;border-color:var(--line);text-decoration:line-through}
+.stat{display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;font-family:var(--mono);font-size:.78rem;color:var(--dim)}
+.stat b{color:var(--clay);font-size:1.05rem}
+
+/* fit meter */
+.meter{height:26px;border-radius:9px;background:var(--line);overflow:hidden;position:relative;margin-top:8px}
+.meter i{display:block;height:100%;background:var(--sage);transition:width .35s,background .35s}
+.meter.over i{background:var(--rose)}
+.meter span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:.76rem;font-weight:700;color:var(--ink)}
+.verdict{margin-top:18px;border-radius:11px;padding:12px 14px;font-size:.9rem;font-weight:700}
+.verdict.ok{background:var(--sage-bg);border:1.5px solid var(--sage);color:#3F6B47}
+.verdict.no{background:var(--rose-bg);border:1.5px solid var(--rose);color:#8E4646}
+.verdict.warn{background:#FBF3E7;border:1.5px solid var(--sun);color:#7A5320}
+
+/* code */
+pre{font-family:var(--mono);font-size:.8rem;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:14px;overflow-x:auto;line-height:1.75;margin-top:12px}
+pre .k{color:#E8B583}pre .s{color:#A8C99A}pre .c{color:#9A8776}
+
+/* ladder */
+.lad{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.rung{display:flex;gap:11px;align-items:center;background:var(--bg);border:1.5px solid var(--line);
+  border-radius:11px;padding:11px 13px}
+.rung.hit{background:var(--sage-bg);border-color:var(--sage)}
+.rung .n{width:26px;height:26px;border-radius:8px;background:var(--clay);color:#FFF6E9;
+  font-family:'Fraunces',serif;font-weight:900;font-size:.8rem;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.rung.hit .n{background:var(--sage)}
+.rung .t{font-size:.88rem;font-weight:700}
+.rung .t s{display:block;font-size:.76rem;color:var(--dim);text-decoration:none;font-weight:600}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:9px;margin-bottom:18px}
+.chip{background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;
+  font-size:.84rem;font-weight:700;text-align:left}
+.chip:hover{border-color:var(--clay)}
+.chip.on{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+
+/* ---- wide-screen slider grid ---- */
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 40px}
+.sliders label.f{margin-top:6px}
+.results{margin-top:28px;padding-top:26px;border-top:1px solid var(--line)}
+@media(max-width:640px){.card{padding:20px}}
+
+/* ---- definitions rail ---- */
+.lab{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:62px;align-items:start}
+.defs{display:flex;flex-direction:column;gap:20px;position:relative;z-index:2}
+.def{background:#fff;border:1.5px solid var(--line);border-left:4px solid var(--sage);
+  border-radius:12px;padding:14px 16px;box-shadow:0 3px 12px rgba(122,90,64,.07)}
+.def .lb{font-family:var(--mono);font-size:.56rem;letter-spacing:.18em;font-weight:700;color:var(--sage)}
+.def h4{font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;margin:3px 0 4px;line-height:1.2}
+.def p{font-size:.78rem;line-height:1.5;color:#6B5647;font-weight:600}
+.def p b{color:var(--deep)}
+.term{font-weight:800;color:var(--deep);border-bottom:2px dotted var(--sage);white-space:nowrap;position:relative}
+.wl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1}
+.wl path{fill:none;stroke:var(--sage);stroke-width:1.5;stroke-dasharray:4 4;opacity:.85}
+.wl circle{fill:var(--sage);stroke:#FFFBF3;stroke-width:1.5}
+@media(max-width:980px){
+  .lab{grid-template-columns:1fr;gap:16px}
+  .wl{display:none}
+  .term{border-bottom-style:solid}
+  .defs{margin-top:4px}
+}
+footer{padding:74px 0 90px;text-align:center;border-top:1px solid var(--line);margin-top:20px}
+footer .big{font-family:'Fraunces',serif;font-weight:900;font-size:1.4rem;margin-bottom:8px}
+footer p{color:var(--dim);font-weight:600;font-size:.9rem;max-width:46ch;margin:0 auto 16px}
+footer .cred{font-family:var(--mono);font-size:.74rem;color:var(--dim);margin-top:22px}
+footer .cred b{color:var(--deep)}
+body,button,input{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='6' y='6' width='12' height='12' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Crect x='9.5' y='9.5' width='5' height='5' rx='1' fill='%23B4785B'/%3E%3Cpath d='M9 6V3M15 6V3M9 21v-3M15 21v-3M6 9H3M6 15H3M21 9h-3M21 15h-3' stroke='%23B4785B' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") 6 4, auto}
+
+/* ---- the canvas ---- */
+.canvas{background:var(--bg);border:1.5px solid var(--line);border-radius:14px;
+  padding:8px 4px;margin-bottom:18px;overflow-x:auto;scrollbar-width:thin}
+.canvas svg{min-width:620px;width:100%;height:auto;display:block}
+.nd{cursor:pointer}
+.hint{font-family:var(--mono);font-size:.66rem;color:var(--dim);margin:-10px 0 16px}
+
+/* ---- node inspector ---- */
+.nodeinfo{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:15px 17px}
+.nodeinfo h5{font-family:'Fraunces',serif;font-size:1.02rem;font-weight:900;line-height:1.2}
+.nodeinfo .ty{font-family:var(--mono);font-size:.64rem;color:var(--clay);letter-spacing:.13em;
+  text-transform:uppercase;margin:2px 0 9px}
+.nodeinfo .jb{font-size:.88rem;color:#6B5647;font-weight:600;margin-bottom:12px}
+.io{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.io{grid-template-columns:1fr}}
+.iob{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:.81rem;font-weight:600;color:#6B5647;line-height:1.55}
+.iob b{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.iob code{font-family:var(--mono);font-size:.76rem;color:var(--deep);word-break:break-word}
+
+/* ---- switches ---- */
+.switches{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:11px}
+.sw{display:flex;gap:13px;align-items:center;text-align:left;background:var(--bg);
+  border:1.5px solid var(--line);border-radius:12px;padding:13px 15px;width:100%}
+.sw.on{background:var(--sage-bg);border-color:var(--sage)}
+.sw.req{border-color:var(--rose);background:var(--rose-bg)}
+.sw.req .knob{background:var(--rose)}
+.knob{width:34px;height:19px;border-radius:10px;background:var(--line);position:relative;flex-shrink:0;transition:background .2s}
+.knob::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;
+  background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on .knob{background:var(--sage)}
+.sw.on .knob::after{transform:translateX(15px)}
+.sl b{font-size:.88rem}
+.sl s{display:block;font-size:.76rem;color:var(--dim);text-decoration:none;font-weight:600;margin-top:2px}
+.chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.vchip{font-family:var(--mono);font-size:.78rem;background:var(--bg);border:1.5px solid var(--line);
+  border-radius:8px;padding:5px 10px}
+.vchip.bad{background:var(--rose-bg);border-color:var(--rose);color:#8E4646}
+.vchip.good{background:var(--sage-bg);border-color:var(--sage);color:#3F6B47}
+
+/* ---- chat transcript ---- */
+.chatlog{display:grid;gap:9px;margin-top:4px}
+.crow{background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:10px 13px;
+  font-size:.85rem;line-height:1.55;animation:pop .3s ease-out}
+.crow b{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--clay);margin-bottom:3px}
+.crow.err{background:var(--rose-bg);border-color:var(--rose);color:#8E4646}
+.crow.err b{color:#8E4646}
+.crow.ask{background:#FBF3E7;border-color:var(--line)}
+.crow .miss{color:var(--rose);font-weight:700}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---- run log ---- */
+.runlog{background:#241C17;border-radius:12px;padding:15px 17px;font-family:var(--mono);font-size:.78rem;
+  line-height:1.95;color:#C3B4A6;min-height:104px;overflow-x:auto}
+.runlog .ll{white-space:pre-wrap;animation:pop .28s ease-out}
+.runlog .ll.err{color:#E39A8A}
+.runlog .ll.good{color:#A8C99A}
+.runlog .dimx{color:#7B6B5E}
+
+/* ---- expression box ---- */
+.exprbox{font-family:var(--mono);font-size:.85rem;background:var(--bg);border:1.5px solid var(--line);
+  border-radius:11px;padding:12px 14px;margin-top:14px;word-break:break-word}
+.exprbox .mu{color:var(--clay);font-weight:700}
+.exprbox .lb{display:block;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:6px}
+.exprbox .rs{display:block;margin-top:8px;font-size:.78rem;color:#6B5647}
+.exprbox .rs i{font-style:normal;color:var(--deep);font-weight:700}
+
+/* ---- inbox mock ---- */
+.inbox{background:#fff;border:1.5px solid var(--line);border-radius:13px;overflow:hidden}
+.ibar{display:flex;gap:7px;align-items:center;background:var(--bg);border-bottom:1px solid var(--line);
+  padding:8px 14px;font-family:var(--mono);font-size:.64rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--dim)}
+.ibar i{width:8px;height:8px;border-radius:50%;background:var(--line);display:inline-block}
+.isub{padding:13px 16px 3px;font-weight:800;font-size:.98rem}
+.isub.empty{color:var(--rose);font-style:italic;font-weight:700}
+.ifrom{padding:0 16px 11px;font-family:var(--mono);font-size:.68rem;color:var(--dim);
+  border-bottom:1px solid var(--line)}
+.ibody{padding:15px 17px;min-height:186px;font-size:.87rem;color:var(--ink)}
+.ibody.plain,.ibody.raw{font-family:var(--mono);font-size:.75rem;white-space:pre-wrap;line-height:1.8;
+  word-break:break-word}
+.ibody.plain{color:#6B5647}
+.ibody.raw{color:#8E4646}
+.ibody.rich h3{font-family:'Fraunces',serif;font-size:1.1rem;margin-bottom:9px;color:var(--deep)}
+.ibody.rich h4{font-size:.72rem;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--clay);margin:13px 0 4px}
+.ibody.rich p{font-size:.85rem;color:#5E4A3E;font-weight:600}
+.ibody.rich .box{background:var(--sage-bg);border-left:3px solid var(--sage);border-radius:0 9px 9px 0;
+  padding:10px 13px;margin-top:14px;font-size:.84rem;color:#3F6B47;font-weight:700}
+.ibody.rich ul{margin:4px 0 0 18px;font-size:.85rem;color:#5E4A3E;font-weight:600}
+
+/* ---- misc ---- */
+.twoup{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.twoup{grid-template-columns:1fr}}
+.pt{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:9px}
+.mini{font-family:var(--mono);font-size:.72rem;color:var(--dim);margin-top:10px}
+.disc{font-size:.76rem;color:var(--dim);font-weight:600;margin-top:12px;font-style:italic}
+@media(max-width:640px){
+  .wrap{padding:0 20px}
+  h1{font-size:2.15rem}
+  h2{font-size:1.46rem}
+  header{padding:58px 0 46px}
+  section{padding:58px 0 62px}
+  .lede{font-size:.95rem;margin-bottom:24px}
+}
+
+</style>
+</head>
+<body>
+<nav><div class="wrap" id="nav"></div></nav>
+
+<header class="wrap">
+  <div class="kick">Be10x · Interactive</div>
+  <h1>Twelve nodes,<br>one <span class="ac">team of agents</span></h1>
+  <p>Six things to click through — ports, sub-nodes, expressions and the wiring that turns one n8n canvas into a manager and two specialists. Everything here recalculates live.</p>
+</header>
+
+<!-- 01 CANVAS -->
+<section class="wrap" id="s1">
+  <div class="num">01</div>
+  <h2>A workflow is just nodes on a canvas.</h2>
+  <p class="lede">Read it left to right. Every box is a <span class="term" id="t-node">node</span> that does one job, and every wire carries actual data to the next one. The first box is special: it's the <span class="term" id="t-trig">trigger</span>, and without it nothing ever starts.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="canvas"><div id="cv1"></div></div>
+    <p class="hint">Click any node to open it. On a phone, drag the canvas sideways.</p>
+    <div class="nodeinfo" id="n1info"></div>
+    <div class="switches" style="margin-top:18px"><button class="sw" id="trigTog">
+      <span class="knob"></span><span class="sl"><b>Remove the trigger</b><s>delete "When chat message received"</s></span></button></div>
+    <div class="verdict" id="v1"></div>
+    <div class="take" id="take1">Four nodes, three wires, one direction. The wire doesn't just say "go next" — it hands over the data.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-node"><div class="lb">DEFINITION</div><h4>Node</h4>
+      <p>One step that does one job. It <b>receives data, does something, passes data on</b>. A workflow is nodes plus the connections between them.</p></div>
+    <div class="def" data-term="t-trig"><div class="lb">DEFINITION</div><h4>Trigger</h4>
+      <p>The starting node. Every workflow needs <b>exactly one</b>. Here it's the Chat Trigger — it fires when a message arrives and one execution begins.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 02 PORTS -->
+<section class="wrap" id="s2">
+  <div class="num">02</div>
+  <h2>The ports underneath the agent.</h2>
+  <p class="lede">An AI Agent node has the usual input on the left and output on the right — plus a row of ports underneath. The <span class="term" id="t-cm">Chat Model port</span> is required; Memory and Tool are not. Flip the switches and watch what the same agent can and can't do. Anything hanging off those bottom ports is a <span class="term" id="t-sub">sub-node</span>.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="canvas"><div id="cv2"></div></div>
+    <div class="switches" id="portSw"></div>
+    <div class="verdict" id="v2"></div>
+    <div class="results">
+      <div class="pt">The same chat, with what's attached right now</div>
+      <div class="chatlog" id="chat2"></div>
+    </div>
+    <div class="take" id="take2"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-cm"><div class="lb">DEFINITION</div><h4>Chat Model port</h4>
+      <p>The agent's brain slot. <b>Required.</b> Leave it empty and the node errors the moment it runs. Here: OpenAI Chat Model, gpt-4o-mini.</p></div>
+    <div class="def" data-term="t-sub"><div class="lb">DEFINITION</div><h4>Sub-node</h4>
+      <p>A node attached <b>underneath</b> another one, on a dotted downward connection. It never runs on its own — the parent node calls it.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 03 ONE PROMPT -->
+<section class="wrap" id="s3">
+  <div class="num">03</div>
+  <h2>One prompt doing four jobs.</h2>
+  <p class="lede">An agent's <span class="term" id="t-sp">system prompt</span> is its job description, typed into the node. Drag the slider and keep adding jobs to a single agent — then watch what a <span class="term" id="t-spec">specialist agent</span> would have done instead.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <label class="f">Jobs crammed into one system prompt <b id="jobsV">1</b></label>
+    <input type="range" id="jobs" min="1" max="5" value="1">
+    <pre id="promptBox"></pre>
+    <div class="results">
+      <label class="f">Prompt length <b id="wordsV">22 words</b></label>
+      <div class="meter" id="lenMeter"><i style="width:14%"></i><span id="lenTxt"></span></div>
+      <label class="f">Focus per job <b id="focusV">100%</b></label>
+      <div class="meter" id="focMeter"><i style="width:100%"></i><span id="focTxt"></span></div>
+      <div class="chipwrap" id="failChips"></div>
+    </div>
+    <div class="verdict" id="v3"></div>
+    <div class="results">
+      <div class="pt">The same work, split into three short job descriptions</div>
+      <div class="lad" id="splitLad"></div>
+    </div>
+    <div class="take" id="take3"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-sp"><div class="lb">DEFINITION</div><h4>System prompt</h4>
+      <p>The instruction you type into the agent node. <b>Short and specific beats long and vague</b> — every extra job dilutes the ones already there.</p></div>
+    <div class="def" data-term="t-spec"><div class="lb">DEFINITION</div><h4>Specialist agent</h4>
+      <p>An agent with <b>one</b> job, its own chat model and its own tools. You upgrade it without touching anything else on the canvas.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 04 AGENT AS TOOL -->
+<section class="wrap" id="s4">
+  <div class="num">04</div>
+  <h2>An agent can be a tool.</h2>
+  <p class="lede">Attach an agent to another agent's <span class="term" id="t-tp">Tool port</span> and the parent stops treating it as a chat partner — it calls it like a function. What decides whether it gets called at all is the <span class="term" id="t-td">tool description</span>. Pick one and run "Analyze Infosys".</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="canvas"><div id="cv4"></div></div>
+    <div class="pt">Tool description on the Fundamental Analysis Agent</div>
+    <div class="chips" id="descChips"></div>
+    <div class="runlog" id="log4"></div>
+    <div class="verdict" id="v4"></div>
+    <div class="row"><button class="btn" id="run4">Run "Analyze Infosys"</button>
+      <span class="mini" id="prog4"></span></div>
+    <div class="take" id="take4"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-tp"><div class="lb">DEFINITION</div><h4>Tool port</h4>
+      <p>Takes <b>zero or many</b> sub-nodes. Anything on it is something the agent <i>may choose</i> to call — SerpAPI, a Code tool, or another agent.</p></div>
+    <div class="def" data-term="t-td"><div class="lb">DEFINITION</div><h4>Tool description</h4>
+      <p>Not documentation — <b>routing logic</b>. It is the only thing the orchestrator reads when deciding which tool to call. Vague description, wrong tool.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 05 ON THE WIRE -->
+<section class="wrap" id="s5">
+  <div class="num">05</div>
+  <h2>What actually moves down the wire.</h2>
+  <p class="lede">Data travels as a list of <span class="term" id="t-item">items</span> — each one a JSON object. A node runs once per item, and an <span class="term" id="t-expr">expression</span> is how the next node reaches into it. Click along the line and inspect what's really there.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="canvas"><div id="cv5"></div></div>
+    <p class="hint">Click a node to inspect the item arriving at it.</p>
+    <pre id="json5"></pre>
+    <div class="exprbox" id="expr5"></div>
+    <div class="take" id="take5"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-item"><div class="lb">DEFINITION</div><h4>Item</h4>
+      <p>One JSON object travelling between nodes. Data moves as a <b>list of items</b>, and a node runs once for each one it receives.</p></div>
+    <div class="def" data-term="t-expr"><div class="lb">DEFINITION</div><h4>Expression</h4>
+      <p>Double curly braces that pull a field out of the incoming item — <b>{{ $json.output }}</b>. It's how nodes talk about each other's data.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 06 LAST MILE -->
+<section class="wrap" id="s6">
+  <div class="num">06</div>
+  <h2>The last mile: an analysis nobody reads.</h2>
+  <p class="lede">The <span class="term" id="t-code">Code node</span> turns the agent's plain text into styled HTML and returns it as items. Then Gmail has one setting that ruins everything — <span class="term" id="t-mt">Message Type</span>. Flip the three switches and watch the inbox.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="switches" id="mailSw"></div>
+    <div class="results">
+      <div class="inbox">
+        <div class="ibar"><i></i><i></i><i></i><span>Inbox — 1 new</span></div>
+        <div class="isub" id="mSub"></div>
+        <div class="ifrom">from: your n8n workflow · to: you@example.com</div>
+        <div class="ibody" id="mBody"></div>
+      </div>
+    </div>
+    <div class="verdict" id="v6"></div>
+    <div class="take" id="take6"></div>
+    <p class="disc">Educational build. Everything shown here is workflow engineering, not financial advice.</p>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-code"><div class="lb">DEFINITION</div><h4>Code node</h4>
+      <p>Runs your JavaScript inside the workflow. It must <b>return items</b> — <code>return [{ json: { html } }]</code> — or nothing reaches the next node.</p></div>
+    <div class="def" data-term="t-mt"><div class="lb">DEFINITION</div><h4>Message Type</h4>
+      <p>A Gmail node setting: Text or HTML. Leave it on <b>Text</b> while sending HTML and your reader gets raw tags. The classic beginner bug.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<footer class="wrap">
+  <div class="big">That's the whole build.</div>
+  <p>One trigger, one manager, two specialists on the Tool port, a chat model under each, and a Code node that makes the answer worth opening.</p>
+  <a class="btn" href="#s1" style="text-decoration:none;display:inline-block">Back to the top</a>
+  <div class="cred">Be10x · Daily Drop — Agentic Automation<br>Built by <b>Eshmith Saideep</b><br>Educational material for learning n8n. Not financial advice.</div>
+</footer>
+
+<script>
+/* ---------- nav ---------- */
+const SECTIONS=[["s1","Canvas"],["s2","Agent ports"],["s3","One vs a team"],["s4","Agent as tool"],["s5","On the wire"],["s6","Last mile"]];
+document.getElementById('nav').innerHTML=SECTIONS.map(([id,l])=>`<a href="#${id}" data-id="${id}">${l}</a>`).join('');
+const links=[...document.querySelectorAll('nav a')];
+addEventListener('scroll',()=>{let cur=SECTIONS[0][0];
+  SECTIONS.forEach(([id])=>{if(document.getElementById(id).getBoundingClientRect().top<160)cur=id;});
+  links.forEach(a=>a.classList.toggle('on',a.dataset.id===cur));});
+
+/* ---------- shared helpers ---------- */
+const CLAY='#B4785B', DEEP='#9A5F44', SAGE='#7FA37A', LINE='#E7D8C4', DIM='#A08B79',
+      INK='#4A3830', CARD='#FFFBF3', PALE='#FBF3E7', ROSE='#C97B7B', ROSEBG='#F7EAEA', SAGEBG='#EEF3EA';
+const svgEl=(w,h,inner)=>`<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* node outline: trigger nodes have a rounded left edge, like the real canvas */
+function nodePath(x,y,w,h,trig){
+  const r=10, rr=h/2;
+  if(trig) return `M${x+rr},${y} h${w-rr-r} a${r},${r} 0 0 1 ${r},${r} v${h-2*r} `+
+    `a${r},${r} 0 0 1 ${-r},${r} h${-(w-rr-r)} a${rr},${rr} 0 0 1 0,${-h} z`;
+  return `M${x+r},${y} h${w-2*r} a${r},${r} 0 0 1 ${r},${r} v${h-2*r} a${r},${r} 0 0 1 ${-r},${r} `+
+    `h${-(w-2*r)} a${r},${r} 0 0 1 ${-r},${-r} v${-(h-2*r)} a${r},${r} 0 0 1 ${r},${-r} z`;
+}
+/* little glyphs drawn by hand, no icon font */
+function glyph(kind,cx,cy,col){
+  if(kind==='trigger') return `<path d="M${cx+1.5},${cy-6} L${cx-4},${cy+1} h4 l-1.5,6 L${cx+4},${cy-1} h-4 z" fill="${col}"/>`;
+  if(kind==='agent')   return `<circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="${col}" stroke-width="1.8"/>`+
+                              `<circle cx="${cx-2.4}" cy="${cy-.6}" r="1.2" fill="${col}"/><circle cx="${cx+2.4}" cy="${cy-.6}" r="1.2" fill="${col}"/>`+
+                              `<path d="M${cx-2.6},${cy+2.8} q2.6,2 5.2,0" stroke="${col}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  if(kind==='code')    return `<path d="M${cx-2},${cy-6} q-3,0 -3,3 t-2,3 q2,0 2,3 t3,3 M${cx+2},${cy-6} q3,0 3,3 t2,3 q-2,0 -2,3 t-3,3" `+
+                              `stroke="${col}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+  if(kind==='mail')    return `<rect x="${cx-7}" y="${cy-5}" width="14" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1.6"/>`+
+                              `<path d="M${cx-7},${cy-4} l7,5.5 l7,-5.5" stroke="${col}" stroke-width="1.6" fill="none"/>`;
+  if(kind==='brain')   return `<path d="M${cx-5},${cy+4} a5,5 0 0 1 0,-8 a4,4 0 0 1 10,0 a5,5 0 0 1 0,8 z" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+  if(kind==='mem')     return `<rect x="${cx-6}" y="${cy-5}" width="12" height="10" rx="2" fill="none" stroke="${col}" stroke-width="1.6"/>`+
+                              `<path d="M${cx-3},${cy-2}h6M${cx-3},${cy+1.5}h6" stroke="${col}" stroke-width="1.4" stroke-linecap="round"/>`;
+  if(kind==='tool')    return `<path d="M${cx+4},${cy-5} a4.4,4.4 0 1 0 -4.6,7 l-4.4,4.4" stroke="${col}" stroke-width="1.7" fill="none" stroke-linecap="round"/>`;
+  return '';
+}
+const arrow=(x,y,col)=>`<path d="M${x-8},${y-4.5} L${x},${y} L${x-8},${y+4.5} z" fill="${col}"/>`;
+const dot=(x,y,col)=>`<circle cx="${x}" cy="${y}" r="3.2" fill="${CARD}" stroke="${col}" stroke-width="1.6"/>`;
+
+/* ---------- 01 the canvas ---------- */
+const NODES=[
+ {t1:"When chat",t2:"message received",ty:"Chat Trigger",g:"trigger",trig:true,
+  job:"Sits and waits. The moment someone types into the chat window it fires, and one execution begins.",
+  inn:"Nothing. It is the start of the line — that is what makes it a trigger.",
+  out:"One item carrying the question: <code>{ chatInput: \"Analyze Infosys\" }</code>"},
+ {t1:"Orchestrator",t2:"Agent",ty:"AI Agent",g:"agent",
+  job:"Reads the question, decides which specialists to call, waits for their answers and merges them into one report. It never researches anything itself.",
+  inn:"The trigger's item. It reads the question with <code>{{ $json.chatInput }}</code>.",
+  out:"Plain text: Fundamental Insights, Technical Insights, Final Summary — in <code>$json.output</code>."},
+ {t1:"Code in",t2:"JavaScript",ty:"Code",g:"code",
+  job:"Turns that plain text into a styled HTML report — heading, bullets, a highlighted summary box. Formatting is engineering, not decoration.",
+  inn:"The agent's item. It reads <code>$json.output</code>.",
+  out:"<code>return [{ json: { html } }]</code> — one item with an <code>html</code> field."},
+ {t1:"Send a",t2:"message",ty:"Gmail",g:"mail",
+  job:"Sends the finished report. Subject built from an expression, body set to the HTML, Message Type set to HTML.",
+  inn:"The item holding <code>html</code>.",
+  out:"The email itself, plus a confirmation item with the Gmail message ID. End of the line."}
+];
+const NX=[16,220,424,628], NW=156, NY=54, NH=64, NMID=54+32;
+let sel1=0, trigOff=false;
+function drawCanvas1(){
+  let s='';
+  for(let i=0;i<3;i++){
+    const x1=NX[i]+NW, x2=NX[i+1], dead=trigOff;
+    s+=`<path d="M${x1},${NMID} H${x2-9}" stroke="${dead?'#EDE2D4':LINE}" stroke-width="2.6" fill="none"/>`
+      +arrow(x2-1,NMID,dead?'#EDE2D4':LINE)+dot(x1,NMID,dead?'#EDE2D4':LINE);
+  }
+  NODES.forEach((n,i)=>{
+    const gone=trigOff&&i===0, dead=trigOff;
+    const on=i===sel1&&!gone;
+    const stroke=gone?ROSE:(on?CLAY:(dead?'#EDE2D4':LINE));
+    const fill=gone?ROSEBG:(on?PALE:CARD);
+    s+=`<g class="nd" data-i="${i}" opacity="${dead&&!gone&&!on?.45:1}">`
+      +`<path d="${nodePath(NX[i],NY,NW,NH,n.trig)}" fill="${fill}" stroke="${stroke}" `
+      +`stroke-width="${on?2.6:1.8}" ${gone?'stroke-dasharray="6 5"':''}/>`
+      +`<rect x="${NX[i]+(n.trig?26:12)}" y="${NY+21}" width="24" height="24" rx="7" fill="${on?'#F4E6D3':'#F7EFE2'}" stroke="${LINE}"/>`
+      +glyph(n.g,NX[i]+(n.trig?38:24),NY+33,gone?ROSE:(on?DEEP:CLAY))
+      +`<text x="${NX[i]+(n.trig?60:46)}" y="${NY+28}" font-family="Nunito,sans-serif" font-size="11.5" font-weight="800" fill="${gone?'#8E4646':INK}">${n.t1}</text>`
+      +`<text x="${NX[i]+(n.trig?60:46)}" y="${NY+43}" font-family="Nunito,sans-serif" font-size="11.5" font-weight="800" fill="${gone?'#8E4646':INK}">${n.t2}</text>`
+      +`<text x="${NX[i]+NW/2}" y="${NY+NH+16}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.4" letter-spacing="1" fill="${DIM}">${n.ty.toUpperCase()}</text>`
+      +`</g>`;
+    if(gone) s+=`<path d="M${NX[i]+40},${NY+16} L${NX[i]+NW-16},${NY+NH-16} M${NX[i]+NW-16},${NY+16} L${NX[i]+40},${NY+NH-16}" stroke="${ROSE}" stroke-width="2.2" opacity=".55"/>`;
+  });
+  s+=`<text x="16" y="26" font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1.4" fill="${DIM}">MAIN LINE — SOLID CONNECTIONS, LEFT TO RIGHT</text>`;
+  document.getElementById('cv1').innerHTML=svgEl(800,150,s);
+  document.querySelectorAll('#cv1 .nd').forEach(g=>g.onclick=()=>{sel1=+g.dataset.i;drawCanvas1();});
+  const n=NODES[sel1];
+  document.getElementById('n1info').innerHTML=
+    `<h5>${n.t1} ${n.t2}</h5><div class="ty">${n.ty} node</div>`
+    +`<div class="jb">${n.job}</div>`
+    +`<div class="io"><div class="iob"><b>What comes in</b>${n.inn}</div>`
+    +`<div class="iob"><b>What goes out</b>${n.out}</div></div>`;
+  const v=document.getElementById('v1');
+  if(trigOff){ v.className='verdict no';
+    v.innerHTML="Nothing runs. Every workflow needs exactly one starting node."; }
+  else { v.className='verdict ok';
+    v.innerHTML="One trigger, three workers. A message arrives and the whole line executes once, top to bottom of the execution log."; }
+  document.getElementById('take1').innerHTML = trigOff
+    ? "The other three nodes are still sitting there, perfectly configured, doing <b>absolutely nothing</b>. n8n won't even log an execution — there was nothing to execute."
+    : "Four nodes, three wires, one direction. The wire doesn't just say \"go next\" — it <b>hands over the data</b>. That's the difference between a flowchart and a workflow.";
+}
+document.getElementById('trigTog').onclick=()=>{
+  trigOff=!trigOff;
+  document.getElementById('trigTog').classList.toggle('on',trigOff);
+  document.getElementById('trigTog').classList.toggle('req',trigOff);
+  drawCanvas1();
+};
+drawCanvas1();
+
+/* ---------- 02 the ports underneath ---------- */
+let ports={chat:false,mem:false,tool:false};
+const PORTS=[
+ {k:"chat",x:270,sx:40,label:"Chat Model*",req:true,g:"brain",
+  n1:"OpenAI Chat Model",n2:"gpt-4o-mini",sw:"Attach a Chat Model",swd:"OpenAI Chat Model · gpt-4o-mini · required"},
+ {k:"mem",x:360,sx:285,label:"Memory",g:"mem",
+  n1:"Simple Memory",n2:"window buffer",sw:"Attach Memory",swd:"Simple Memory · remembers this chat"},
+ {k:"tool",x:450,sx:530,label:"Tool",g:"tool",
+  n1:"Fundamental Analysis Agent",n2:"agent as tool",sw:"Attach a Tool",swd:"a specialist agent that can search the live web"}
+];
+function drawCanvas2(){
+  let s='';
+  /* main line stubs, solid, left to right */
+  s+=`<path d="${nodePath(16,44,96,42,true)}" fill="${CARD}" stroke="${LINE}" stroke-width="1.6"/>`
+    +`<text x="70" y="62" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9.5" font-weight="800" fill="${DIM}">When chat</text>`
+    +`<text x="70" y="75" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9.5" font-weight="800" fill="${DIM}">message received</text>`
+    +`<path d="M112,65 H213" stroke="${LINE}" stroke-width="2.6"/>`+arrow(221,65,LINE)+dot(112,65,LINE)
+    +`<path d="${nodePath(608,44,96,42,false)}" fill="${CARD}" stroke="${LINE}" stroke-width="1.6"/>`
+    +`<text x="656" y="62" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9.5" font-weight="800" fill="${DIM}">Code in</text>`
+    +`<text x="656" y="75" text-anchor="middle" font-family="Nunito,sans-serif" font-size="9.5" font-weight="800" fill="${DIM}">JavaScript</text>`
+    +`<path d="M495,65 H599" stroke="${LINE}" stroke-width="2.6"/>`+arrow(607,65,LINE)+dot(495,65,LINE);
+  /* the agent node */
+  const ok=ports.chat;
+  s+=`<path d="${nodePath(225,26,270,86,false)}" fill="${ok?PALE:ROSEBG}" stroke="${ok?CLAY:ROSE}" stroke-width="2.4"/>`
+    +`<rect x="240" y="52" width="26" height="26" rx="8" fill="#F4E6D3" stroke="${LINE}"/>`
+    +glyph('agent',253,65,ok?DEEP:'#8E4646')
+    +`<text x="276" y="61" font-family="Nunito,sans-serif" font-size="13" font-weight="800" fill="${ok?INK:'#8E4646'}">Orchestrator Agent</text>`
+    +`<text x="276" y="77" font-family="JetBrains Mono,monospace" font-size="8.6" letter-spacing="1" fill="${DIM}">AI AGENT NODE</text>`;
+  /* bottom ports + dotted downward sub-node connections */
+  PORTS.forEach(p=>{
+    const on=ports[p.k], missing=p.req&&!on;
+    const col=on?SAGE:(missing?ROSE:DIM);
+    s+=`<circle cx="${p.x}" cy="112" r="5.2" fill="${on?SAGE:CARD}" stroke="${col}" stroke-width="1.8" ${on?'':'stroke-dasharray="2.6 2.2"'}/>`
+      +`<text x="${p.x}" y="130" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" letter-spacing=".5" fill="${col}">${p.label}</text>`;
+    if(on){
+      const cx=p.sx+75;
+      s+=`<path d="M${p.x},117 C${p.x},152 ${cx},146 ${cx},178" stroke="${SAGE}" stroke-width="2" fill="none" stroke-dasharray="5 4"/>`
+        +`<path d="${nodePath(p.sx,180,150,50,false)}" fill="${SAGEBG}" stroke="${SAGE}" stroke-width="1.8"/>`
+        +`<rect x="${p.sx+10}" y="${193}" width="24" height="24" rx="7" fill="${CARD}" stroke="${SAGE}"/>`
+        +glyph(p.g,p.sx+22,205,SAGE)
+        +`<text x="${p.sx+42}" y="201" font-family="Nunito,sans-serif" font-size="9.6" font-weight="800" fill="#3F6B47">${p.n1}</text>`
+        +`<text x="${p.sx+42}" y="214" font-family="JetBrains Mono,monospace" font-size="8" fill="${DIM}">${p.n2}</text>`;
+    }else{
+      const cx=p.sx+75;
+      s+=`<path d="M${p.x},117 C${p.x},152 ${cx},146 ${cx},176" stroke="${missing?ROSE:'#EDE2D4'}" stroke-width="1.4" fill="none" stroke-dasharray="3 5"/>`
+        +`<path d="${nodePath(p.sx,180,150,50,false)}" fill="none" stroke="${missing?ROSE:'#EDE2D4'}" stroke-width="1.4" stroke-dasharray="5 5"/>`
+        +`<text x="${p.sx+75}" y="209" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.4" fill="${missing?ROSE:DIM}">${missing?'EMPTY — REQUIRED':'empty port'}</text>`;
+    }
+  });
+  s+=`<text x="16" y="20" font-family="JetBrains Mono,monospace" font-size="8.4" letter-spacing="1.3" fill="${DIM}">SOLID + SIDEWAYS = MAIN LINE</text>`
+    +`<text x="704" y="20" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8.4" letter-spacing="1.3" fill="${SAGE}">DOTTED + DOWNWARD = SUB-NODES</text>`;
+  document.getElementById('cv2').innerHTML=svgEl(720,248,s);
+}
+function drawPorts(){
+  document.getElementById('portSw').innerHTML=PORTS.map(p=>
+    `<button class="sw ${ports[p.k]?'on':''} ${p.req&&!ports[p.k]?'req':''}" data-k="${p.k}">
+      <span class="knob"></span><span class="sl"><b>${p.sw}</b><s>${p.swd}</s></span></button>`).join('');
+  document.querySelectorAll('#portSw .sw').forEach(b=>b.onclick=()=>{ports[b.dataset.k]=!ports[b.dataset.k];drawPorts();});
+  drawCanvas2();
+  const v=document.getElementById('v2'), log=document.getElementById('chat2'), take=document.getElementById('take2');
+  const Q1=`<div class="crow ask"><b>you</b>Analyze Infosys</div>`;
+  const Q2=`<div class="crow ask"><b>you — follow-up</b>and its technical view?</div>`;
+  if(!ports.chat){
+    v.className='verdict no';
+    v.innerHTML="The agent can't run at all — the brain slot is empty.";
+    log.innerHTML=Q1+`<div class="crow err"><b>execution failed</b>A Chat Model sub-node must be connected to the Orchestrator Agent. The node never even starts reasoning.</div>`;
+    take.innerHTML="This is error number one for every beginner. The node looks fine on the canvas; the <b>required port is empty</b>, so the execution dies on the first node that matters.";
+    return;
+  }
+  let a1,a2;
+  if(ports.tool) a1="Fundamental View: Bullish — steady large deal wins and a stable margin outlook this quarter. (Source: live search.)";
+  else a1="Infosys is a large Indian IT services company. <span class=\"miss\">I don't have access to current information</span>, so I can't comment on recent results.";
+  if(ports.mem) a2=(ports.tool?"Technical View: Neutral — Infosys is trending up but sitting just under resistance.":"For Infosys, I'd need live price data to give a technical view.");
+  else a2="<span class=\"miss\">Which company are you referring to?</span> I don't have any earlier messages.";
+  log.innerHTML=Q1+`<div class="crow"><b>orchestrator agent</b>${a1}</div>`+Q2+`<div class="crow"><b>orchestrator agent</b>${a2}</div>`;
+  if(ports.mem&&ports.tool){
+    v.className='verdict ok';
+    v.innerHTML="All three ports doing their job: a brain to reason, memory to hold the thread, a tool to go and look things up.";
+    take.innerHTML="Required, optional, and zero-or-many. Notice the shape of the wires — the sub-nodes hang <b>downward on dotted lines</b>, the main line runs <b>sideways and solid</b>. Telling those two apart is the clearest sign someone actually understands n8n.";
+  }else if(ports.mem){
+    v.className='verdict warn';
+    v.innerHTML="The follow-up makes sense now — Simple Memory keeps the last turns of this chat. It still can't look anything up.";
+    take.innerHTML="Memory fixes the conversation, not the knowledge. \"<b>I don't have access to current information</b>\" always means the same thing: nothing on the Tool port.";
+  }else if(ports.tool){
+    v.className='verdict warn';
+    v.innerHTML="It can go and fetch live facts now — but every follow-up still arrives from a stranger.";
+    take.innerHTML="Tools give it reach. Memory gives it continuity. They are <b>separate ports</b> solving separate problems, and one never covers for the other.";
+  }else{
+    v.className='verdict warn';
+    v.innerHTML="It runs. Ask a follow-up and it has no idea what you were talking about.";
+    take.innerHTML="A chat model alone gets you a very confident stranger: it answers from training data and <b>forgets you the moment you press enter</b>.";
+  }
+}
+drawPorts();
+
+/* ---------- 03 one prompt, four jobs ---------- */
+const JOBS=[
+ {l:"answer the question", line:"You are a stock analysis assistant. Answer the user's question about a company.", w:22},
+ {l:"research the news",   line:"Search the web for the latest news, quarterly results, sector demand and management commentary.", w:46},
+ {l:"read the charts",     line:"Also read the price chart: trend direction, support and resistance, RSI, MACD and EMA readings.", w:48},
+ {l:"format the HTML",     line:"Format the whole answer as styled HTML with an h2 heading, bullet lists and a highlighted summary box.", w:52},
+ {l:"send the mail",       line:"Then email the finished report to the user, write a clear subject line, and confirm that it was sent.", w:50}
+];
+const FAILS=[[],["works through topics one at a time"],["skims the charts"],["forgets the format"],
+             ["one mistake poisons everything","painful to edit without breaking something else"]];
+const FOCUS=[100,72,51,35,24];
+const SPLIT=[
+ ["1","Orchestrator Agent","Delegate to the specialists and merge their answers. Never research anything yourself."],
+ ["2","Fundamental Analysis Agent","News, quarterly results, sector demand, sentiment. Return a Fundamental View."],
+ ["3","Technical Analysis Agent","Trend, support, resistance, RSI, MACD, EMA. Return a Technical View."]
+];
+const jobsEl=document.getElementById('jobs');
+function drawJobs(){
+  const n=+jobsEl.value;
+  document.getElementById('jobsV').textContent=n;
+  const words=JOBS.slice(0,n).reduce((a,b)=>a+b.w,0);
+  document.getElementById('promptBox').innerHTML=
+    `<span class="c">// Orchestrator Agent → System Message</span>\n`
+    +JOBS.slice(0,n).map((j,i)=>(i?'<span class="s">':'<span class="k">')+esc(j.line)+'</span>').join('\n');
+  document.getElementById('wordsV').textContent=words+" words";
+  const lenPct=Math.min(100,Math.round(words/3.2));
+  const lm=document.getElementById('lenMeter');
+  lm.classList.toggle('over',n>=3);
+  lm.querySelector('i').style.width=lenPct+"%";
+  document.getElementById('lenTxt').textContent=n===1?"one job":n+" jobs in one prompt";
+  const foc=FOCUS[n-1];
+  document.getElementById('focusV').textContent=foc+"%";
+  const fm=document.getElementById('focMeter');
+  fm.classList.toggle('over',foc<60);
+  fm.querySelector('i').style.width=foc+"%";
+  document.getElementById('focTxt').textContent=foc>=70?"sharp":(foc>=40?"thinning":"jack of all trades");
+  const fails=FAILS.slice(0,n).flat();
+  document.getElementById('failChips').innerHTML=fails.length
+    ? fails.map(f=>`<span class="vchip bad">${f}</span>`).join('')
+    : `<span class="vchip good">one job, done properly</span>`;
+  document.getElementById('splitLad').innerHTML=SPLIT.map(([i,t,d])=>
+    `<div class="rung ${n>=4?'hit':''}"><span class="n">${i}</span>
+      <span class="t">${t}<s>${d}</s></span></div>`).join('');
+  const v=document.getElementById('v3'), take=document.getElementById('take3');
+  if(n===1){ v.className='verdict ok';
+    v.innerHTML="One job, one short prompt. This is exactly what a specialist agent looks like.";
+    take.innerHTML="Keep dragging. Nothing breaks loudly — the answers just get <b>blander with every job you add</b>."; }
+  else if(n===2){ v.className='verdict warn';
+    v.innerHTML="Still workable, but it now handles topics one at a time instead of side by side.";
+    take.innerHTML="A single agent reasons in sequence. Two specialists on the Tool port get called in the <b>same reasoning turn</b>."; }
+  else if(n===3){ v.className='verdict warn';
+    v.innerHTML="Depth is going. It touches the charts, but it no longer studies them.";
+    take.innerHTML="This is where people blame the model. It isn't the model — it's <b>one job description trying to be three</b>."; }
+  else if(n===4){ v.className='verdict no';
+    v.innerHTML="Generic everywhere, sharp nowhere — and every fix you make risks breaking the other three jobs.";
+    take.innerHTML="Editing this prompt is now dangerous. Change the formatting rule and the research rule quietly shifts with it. <b>One long instruction is one big blast radius.</b>"; }
+  else { v.className='verdict ok';
+    v.innerHTML="Split it. Two short job descriptions beat one long one.";
+    take.innerHTML="Same work, three prompts — a manager and two specialists. Each one is short enough to read, and you can <b>upgrade one agent without touching the others</b>."; }
+}
+jobsEl.addEventListener('input',drawJobs); drawJobs();
+
+/* ---------- 04 agent as tool ---------- */
+const DESCS=[
+ {k:"vague", label:'"agent"', tag:'agent', quality:'vague', called:'tech',
+  log:[['reads its tool list','2 tools: "agent", "technical analysis of stock charts"','dim'],
+       ['cannot tell what "agent" does','skips it and calls Technical Analysis Agent instead','err'],
+       ['returns','Technical View only. The fundamental half of the report never happened.','err']],
+  v:['no',"Two tools, one of them called \"agent\". The orchestrator has nothing to route on, so it picks the other one — and your Fundamental Analysis Agent sits there, wired up perfectly, never called."],
+  take:"This is the number-one cause of an agent calling the wrong tool or no tool at all. The node is connected. The credentials are fine. <b>The description is the bug.</b>"},
+ {k:"mid", label:'"analysis tool"', tag:'analysis tool', quality:'medium', called:'fund-weak',
+  log:[['reads its tool list','2 tools: "analysis tool", "technical analysis of stock charts"','dim'],
+       ['calls Fundamental Analysis Agent','instruction sent: "analyze Infosys"','dim'],
+       ['returns','a general summary. No Key Findings, no sentiment, no Fundamental View.','err']],
+  v:['warn',"It gets called — but with a brief as vague as its description. The specialist doesn't know it was supposed to come back with news, results and sentiment, so it returns something shapeless."],
+  take:"Half a description gets you half a delegation. The parent sends <b>one instruction and waits for a structured reply</b> — so tell it what structure to ask for."},
+ {k:"good", label:'the full description', tag:'Use for company news, quarterly results, sector demand and market sentiment. Returns a Fundamental View.',
+  quality:'good', called:'fund',
+  log:[['reads its tool list','matches "company news, quarterly results, sector demand, market sentiment"','dim'],
+       ['calls Fundamental Analysis Agent','instruction sent: "Infosys — latest news, Q results, sector demand, sentiment"','good'],
+       ['returns','Fundamental View: Bullish — steady large deal wins, stable margins.','good']],
+  v:['ok',"Right tool, right brief, structured answer. The orchestrator can now call the Technical Analysis Agent in the same turn and merge both views."],
+  take:"Write the description for the reader who has to choose: <b>what it covers, when to use it, what it returns</b>. Three clauses, and the routing stops being a lottery."}
+];
+let d4='good', called4=null, running4=false;
+function drawCanvas4(){
+  const D=DESCS.find(d=>d.k===d4);
+  const hitF=called4&&(called4==='fund'||called4==='fund-weak'), hitT=called4==='tech';
+  const fCol=hitF?SAGE:(called4?'#EDE2D4':LINE), tCol=hitT?ROSE:(called4?'#EDE2D4':LINE);
+  let s=`<path d="${nodePath(255,18,210,62,false)}" fill="${PALE}" stroke="${CLAY}" stroke-width="2.2"/>`
+    +`<rect x="268" y="36" width="24" height="24" rx="7" fill="#F4E6D3" stroke="${LINE}"/>`+glyph('agent',280,48,DEEP)
+    +`<text x="300" y="45" font-family="Nunito,sans-serif" font-size="12" font-weight="800" fill="${INK}">Orchestrator Agent</text>`
+    +`<text x="300" y="60" font-family="JetBrains Mono,monospace" font-size="8" letter-spacing="1" fill="${DIM}">DELEGATES · NEVER RESEARCHES</text>`
+    +`<circle cx="360" cy="80" r="5.2" fill="${SAGE}" stroke="${SAGE}" stroke-width="1.6"/>`
+    +`<text x="372" y="95" font-family="JetBrains Mono,monospace" font-size="8" fill="${SAGE}">TOOL PORT</text>`;
+  /* two specialists on the tool port */
+  const spec=[[60,'Fundamental Analysis Agent',D.tag,fCol,hitF],[450,'Technical Analysis Agent','technical analysis of stock charts',tCol,hitT]];
+  spec.forEach(([x,name,desc,col,hit],i)=>{
+    const cx=x+105;
+    s+=`<path d="M360,86 C360,124 ${cx},116 ${cx},146" stroke="${col}" stroke-width="${hit?2.4:1.6}" fill="none" stroke-dasharray="5 4"/>`
+      +`<path d="${nodePath(x,148,210,56,false)}" fill="${hit?(i?ROSEBG:SAGEBG):CARD}" stroke="${col}" stroke-width="${hit?2.2:1.6}"/>`
+      +`<rect x="${x+11}" y="${161}" width="22" height="22" rx="6" fill="#F7EFE2" stroke="${col}"/>`+glyph('agent',x+22,172,hit?(i?'#8E4646':'#3F6B47'):CLAY)
+      +`<text x="${x+41}" y="169" font-family="Nunito,sans-serif" font-size="10.4" font-weight="800" fill="${hit?(i?'#8E4646':'#3F6B47'):INK}">${name}</text>`
+      +`<text x="${x+41}" y="182" font-family="JetBrains Mono,monospace" font-size="7.6" fill="${DIM}">${esc(desc.length>34?desc.slice(0,32)+'…':desc)}</text>`
+      +`<text x="${x+41}" y="195" font-family="JetBrains Mono,monospace" font-size="7.6" fill="${DIM}">${i?'+ OpenAI Chat Model + SerpAPI':'+ OpenAI Chat Model + SerpAPI'}</text>`;
+    if(hit) s+=`<text x="${cx}" y="128" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.4" font-weight="700" fill="${i?'#8E4646':'#3F6B47'}">CALLED</text>`;
+  });
+  s+=`<text x="16" y="16" font-family="JetBrains Mono,monospace" font-size="8.4" letter-spacing="1.3" fill="${DIM}">AN AGENT ON ANOTHER AGENT'S TOOL PORT</text>`;
+  document.getElementById('cv4').innerHTML=svgEl(720,216,s);
+}
+function drawDescs(){
+  document.getElementById('descChips').innerHTML=DESCS.map(d=>
+    `<button class="chip ${d4===d.k?'on':''}" data-k="${d.k}">${esc(d.tag.length>46?d.tag.slice(0,44)+'…':d.tag)}
+      <s style="display:block;font-weight:600;font-size:.72rem;text-decoration:none;opacity:.75">${d.quality}</s></button>`).join('');
+  document.querySelectorAll('#descChips .chip').forEach(b=>b.onclick=()=>{
+    if(running4) return; d4=b.dataset.k; called4=null; drawDescs(); runDelegation();});
+}
+async function runDelegation(){
+  const D=DESCS.find(d=>d.k===d4), log=document.getElementById('log4'), v=document.getElementById('v4');
+  running4=true; called4=null; drawCanvas4();
+  document.getElementById('run4').disabled=true;
+  document.getElementById('prog4').textContent='running…';
+  log.innerHTML=`<div class="ll dimx">execution started · chatInput: "Analyze Infosys"</div>`;
+  v.className='verdict'; v.style.display='none';
+  for(const [what,txt,cls] of D.log){
+    await wait(620);
+    log.insertAdjacentHTML('beforeend',
+      `<div class="ll ${cls==='err'?'err':(cls==='good'?'good':'')}">${esc(what)}  <span class="dimx">${esc(txt)}</span></div>`);
+  }
+  called4=D.called; drawCanvas4();
+  await wait(220);
+  v.style.display='block'; v.className='verdict '+D.v[0]; v.innerHTML=D.v[1];
+  document.getElementById('take4').innerHTML=D.take;
+  document.getElementById('run4').disabled=false;
+  document.getElementById('prog4').textContent='done — try another description';
+  running4=false;
+}
+document.getElementById('run4').onclick=()=>{if(!running4)runDelegation();};
+drawDescs(); drawCanvas4();
+document.getElementById('log4').innerHTML='<div class="ll dimx">pick a description, or press Run</div>';
+document.getElementById('v4').style.display='none';
+document.getElementById('take4').innerHTML="The two specialists never talk to each other and don't know the other exists. Only the orchestrator sees both — and it sees them <b>as descriptions</b>.";
+
+/* ---------- 05 what moves down the wire ---------- */
+const WIRE=[
+ {json:`[\n  {\n    "chatInput": "Analyze Infosys",\n    "sessionId": "a1f2-9c44"\n  }\n]`,
+  where:"leaving When chat message received",
+  expr:`{{ $json.chatInput }}`, exprWhere:"in the Orchestrator Agent's prompt field",
+  res:"Analyze Infosys",
+  note:"One item. The whole question is a single field on a single JSON object — that's all a chat trigger produces."},
+ {json:`[\n  {\n    "output": "Fundamental Insights: steady large deal wins…\\nTechnical Insights: trending up, near resistance…\\nFinal Summary: constructive, watch the level."\n  }\n]`,
+  where:"leaving Orchestrator Agent",
+  expr:`{{ $json.output }}`, exprWhere:"in the Code node",
+  res:"Fundamental Insights: steady large deal wins…",
+  note:"The agent replaced the item. <b>chatInput is gone</b> — an AI Agent node outputs its own item with a single <code>output</code> field."},
+ {json:`[\n  {\n    "html": "<h2>Infosys — Analysis</h2><p><b>Fundamental View:</b> Bullish</p>…"\n  }\n]`,
+  where:"leaving Code in JavaScript",
+  expr:`{{ $json.html }}`, exprWhere:"in the Gmail node's Message field",
+  res:"<h2>Infosys — Analysis</h2>…",
+  note:"The Code node returned <code>[{ json: { html } }]</code>. Return the wrong shape and the next node receives nothing at all."},
+ {json:`[\n  {\n    "subject": "Stock Analysis: Analyze Infosys",\n    "message": "<h2>Infosys — Analysis</h2>…",\n    "messageType": "html"\n  }\n]`,
+  where:"resolved inside Send a message",
+  expr:`Stock Analysis: {{ $('When chat message received').item.json.chatInput }}`,
+  exprWhere:"in the Gmail node's Subject field",
+  res:"Stock Analysis: Analyze Infosys",
+  note:"Here's the catch. The item arriving at Gmail only has <code>html</code> — so <code>{{ $json.chatInput }}</code> would resolve to <b>empty</b>. To reach back up the line you name the node you want it from."}
+];
+const W5X=[16,220,424,628];
+let sel5=0;
+function drawCanvas5(){
+  let s='';
+  for(let i=0;i<3;i++){
+    const on=i<sel5;
+    s+=`<path d="M${W5X[i]+NW},52 H${W5X[i+1]-9}" stroke="${on?CLAY:LINE}" stroke-width="${on?3:2.6}" fill="none"/>`
+      +arrow(W5X[i+1]-1,52,on?CLAY:LINE)+dot(W5X[i]+NW,52,on?CLAY:LINE);
+    if(i===sel5-1) s+=`<rect x="${W5X[i]+NW+18}" y="40" width="46" height="21" rx="7" fill="${PALE}" stroke="${CLAY}" stroke-width="1.4"/>`
+      +`<text x="${W5X[i]+NW+41}" y="55" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8.4" fill="${DEEP}">1 item</text>`;
+  }
+  NODES.forEach((n,i)=>{
+    const on=i===sel5;
+    s+=`<g class="nd" data-i="${i}">`
+      +`<path d="${nodePath(W5X[i],28,NW,48,n.trig)}" fill="${on?PALE:CARD}" stroke="${on?CLAY:LINE}" stroke-width="${on?2.6:1.8}"/>`
+      +`<text x="${W5X[i]+NW/2+(n.trig?10:0)}" y="${on?48:52}" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10.4" font-weight="800" fill="${INK}">${n.t1}</text>`
+      +`<text x="${W5X[i]+NW/2+(n.trig?10:0)}" y="${on?61:65}" text-anchor="middle" font-family="Nunito,sans-serif" font-size="10.4" font-weight="800" fill="${INK}">${n.t2}</text>`
+      +`<text x="${W5X[i]+NW/2}" y="92" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" letter-spacing=".8" fill="${on?CLAY:DIM}">${on?'INSPECTING':n.ty.toUpperCase()}</text>`
+      +`</g>`;
+  });
+  document.getElementById('cv5').innerHTML=svgEl(800,104,s);
+  document.querySelectorAll('#cv5 .nd').forEach(g=>g.onclick=()=>{sel5=+g.dataset.i;drawCanvas5();});
+  const w=WIRE[sel5];
+  document.getElementById('json5').innerHTML=
+    `<span class="c">// ${w.where}</span>\n`+hl(w.json);
+  document.getElementById('expr5').innerHTML=
+    `<span class="lb">Expression — ${w.exprWhere}</span>`
+    +esc(w.expr).replace(/\{\{|\}\}/g,m=>`<span class="mu">${m}</span>`)
+    +`<span class="rs">resolves to <i>${esc(w.res)}</i></span>`;
+  document.getElementById('take5').innerHTML=w.note;
+}
+function hl(src){
+  return esc(src).replace(/("(?:[^"\\]|\\.)*")(\s*:)?/g,(m,str,colon)=>
+    colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`);
+}
+drawCanvas5();
+
+/* ---------- 06 the last mile ---------- */
+let mail={code:false,type:false,subj:false};
+const MSW=[
+ {k:"code",l:"Code node formats to HTML",d:"return [{ json: { html } }]"},
+ {k:"type",l:"Gmail Message Type = HTML",d:"the setting everyone leaves on Text"},
+ {k:"subj",l:"Subject from expression",d:"Stock Analysis: {{ …chatInput }}"}
+];
+const PLAIN=`Infosys - Analysis\n\nFundamental Insights: steady large deal wins this quarter, stable margin outlook, sector demand holding up. Market sentiment positive. Fundamental View: Bullish.\n\nTechnical Insights: trend is up but the price is sitting just under resistance. RSI is neither overbought nor oversold. Technical View: Neutral.\n\nFinal Summary: constructive on the business, patient on the entry. Educational example - not financial advice.`;
+const HTMLSRC=`<h2>Infosys — Analysis</h2>\n<h4>Fundamental Insights</h4>\n<ul><li>Steady large deal wins, stable margin outlook</li><li>Sector demand holding up; sentiment positive</li></ul>\n<p><b>Fundamental View:</b> Bullish</p>\n<h4>Technical Insights</h4>\n<ul><li>Trend up, price just under resistance</li><li>RSI neutral — neither overbought nor oversold</li></ul>\n<p><b>Technical View:</b> Neutral</p>\n<div class="box">Final Summary: constructive on the business, patient on the entry.</div>`;
+const RICH=`<h3>Infosys — Analysis</h3>
+  <h4>Fundamental Insights</h4>
+  <ul><li>Steady large deal wins, stable margin outlook</li><li>Sector demand holding up; sentiment positive</li></ul>
+  <p><b>Fundamental View:</b> Bullish</p>
+  <h4>Technical Insights</h4>
+  <ul><li>Trend up, price just under resistance</li><li>RSI neutral — neither overbought nor oversold</li></ul>
+  <p><b>Technical View:</b> Neutral</p>
+  <div class="box">Final Summary: constructive on the business, patient on the entry. Educational example — not financial advice.</div>`;
+function drawMail(){
+  document.getElementById('mailSw').innerHTML=MSW.map(m=>
+    `<button class="sw ${mail[m.k]?'on':''}" data-k="${m.k}">
+      <span class="knob"></span><span class="sl"><b>${m.l}</b><s>${esc(m.d)}</s></span></button>`).join('');
+  document.querySelectorAll('#mailSw .sw').forEach(b=>b.onclick=()=>{mail[b.dataset.k]=!mail[b.dataset.k];drawMail();});
+  const sub=document.getElementById('mSub'), body=document.getElementById('mBody');
+  sub.className='isub'+(mail.subj?'':' empty');
+  sub.textContent=mail.subj?"Stock Analysis: Analyze Infosys":"(no subject)";
+  const v=document.getElementById('v6'), take=document.getElementById('take6');
+  if(!mail.code){
+    body.className='ibody plain'; body.textContent=PLAIN;
+    v.className='verdict no';
+    v.innerHTML=mail.type
+      ? "Message Type is HTML, but the Code node never made any HTML. A wall of plain text, delivered very correctly."
+      : "A wall of plain text. Technically it arrived. Realistically nobody is reading past line two.";
+    take.innerHTML="The analysis is identical in all four combinations — same agents, same findings. <b>Only the last mile changed</b>, and it decides whether the work gets read.";
+  }else if(!mail.type){
+    body.className='ibody raw'; body.textContent=HTMLSRC;
+    v.className='verdict no';
+    v.innerHTML="There it is — the classic bug. The Code node returned HTML and Gmail is still set to Text, so the reader gets raw &lt;h2&gt; tags.";
+    take.innerHTML="Nothing errored. The execution is green, the Code node returned exactly what it should. One dropdown left on <b>Text instead of HTML</b> and the whole report arrives as source code.";
+  }else{
+    body.className='ibody rich'; body.innerHTML=RICH;
+    v.className=mail.subj?'verdict ok':'verdict warn';
+    v.innerHTML=mail.subj
+      ? "Clean, styled, and it says what it is before you open it. This is the version somebody actually reads."
+      : "The body is right. The subject line is blank, so it looks like spam in the inbox list — turn the expression on.";
+    take.innerHTML="Code node returns items, Gmail renders them. <b>An analysis nobody reads is worth nothing</b> — formatting and delivery are part of the engineering, not decoration on top of it.";
+  }
+}
+drawMail();
+
+/* ---------- definition wires ---------- */
+function drawWires(){
+  document.querySelectorAll('.lab').forEach(lab=>{
+    const svg=lab.querySelector('.wl'); if(!svg) return;
+    if(getComputedStyle(svg).display==='none'){svg.innerHTML='';return;}
+    const lr=lab.getBoundingClientRect();
+    svg.setAttribute('viewBox',`0 0 ${lr.width} ${lr.height}`);
+    let out='';
+    lab.querySelectorAll('.def[data-term]').forEach(def=>{
+      const term=document.getElementById(def.dataset.term); if(!term) return;
+      const tr=term.getBoundingClientRect(), dr=def.getBoundingClientRect();
+      const x1=tr.right-lr.left+3, y1=tr.top-lr.top+tr.height/2;
+      const x2=dr.left-lr.left-3,  y2=dr.top-lr.top+18;
+      const mid=(x1+x2)/2;
+      out+=`<path d="M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}"/>`
+         + `<circle cx="${x1}" cy="${y1}" r="3.4"/><circle cx="${x2}" cy="${y2}" r="3.4"/>`;
+    });
+    svg.innerHTML=out;
+  });
+}
+addEventListener('load',drawWires);
+addEventListener('resize',drawWires);
+if(window.ResizeObserver){ new ResizeObserver(drawWires).observe(document.body); }
+setTimeout(drawWires,400);
+
+</script>
+</body>
+</html>

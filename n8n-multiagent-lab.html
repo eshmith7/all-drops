@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>n8n Multi-Agent — Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F8FA;--surface:#FFFFFF;--surface-2:#FBFCFD;--border:#E3E7ED;--border-strong:#D2D8E2;
+  --ink:#101828;--ink-2:#475467;--ink-3:#8A94A6;--accent:#2563EB;--accent-soft:#EFF4FF;
+  --ok:#059669;--ok-soft:#ECFDF3;--err:#DC2626;--err-soft:#FEF3F2;--warn:#D97706;--warn-soft:#FFFAEB;
+  --mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);min-height:100vh;
+  background:linear-gradient(var(--border) 1px,transparent 1px) 0 0/64px 64px,
+    linear-gradient(90deg,var(--border) 1px,transparent 1px) 0 0/64px 64px,var(--bg)}
+body::before{content:"";position:fixed;inset:0;background:var(--bg);opacity:.55;pointer-events:none;z-index:0}
+button{font:inherit;cursor:pointer}
+.topbar{position:sticky;top:0;z-index:60;background:rgba(247,248,250,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.topinner{max-width:1240px;margin:0 auto;padding:14px 22px 0;display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap}
+.brandmark{display:flex;align-items:center;gap:10px;padding-bottom:12px}
+.dotlogo{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.brandmark .n{font-weight:700;font-size:.92rem}
+.brandmark .v{font-family:var(--mono);font-size:.66rem;color:var(--ink-3);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.tabs{display:flex;gap:2px;margin-left:auto}
+.tab{border:none;background:none;color:var(--ink-3);font-weight:600;font-size:.83rem;padding:10px 16px 13px;border-bottom:2px solid transparent}
+.tab:hover{color:var(--ink-2)}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .step{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);margin-right:7px}
+.tab.active .step{color:var(--accent)}
+.view{display:none;position:relative;z-index:1}.view.on{display:block}
+.page{max-width:1240px;margin:0 auto;padding:30px 22px 54px}
+.head{margin-bottom:18px;max-width:680px}
+.kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+h1{font-size:1.6rem;font-weight:700;letter-spacing:-.025em;margin-bottom:7px}
+.lede{color:var(--ink-2);font-size:.92rem;line-height:1.6}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.card+.card{margin-top:14px}
+.card-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card-h .t{font-size:.82rem;font-weight:600}
+.card-h .m{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.06em;white-space:nowrap}
+.card-b{padding:16px}
+.btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:600;font-size:.82rem}
+.btn:hover:not(:disabled){background:#1D2939}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sec{background:var(--surface);color:var(--ink-2);border:1px solid var(--border)}
+.btn.sec:hover:not(:disabled){background:var(--surface-2);color:var(--ink)}
+.bar{display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.reqs{margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--ink-3)}
+.leds{display:flex;gap:5px;flex-wrap:wrap}
+.led{width:8px;height:8px;border-radius:50%;background:var(--border-strong);transition:all .3s}
+.led.on{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft),0 0 9px rgba(5,150,105,.55)}
+.led.fail{background:var(--err);box-shadow:0 0 0 3px var(--err-soft)}
+.verdict{font-family:var(--mono);font-size:.76rem;padding:11px 14px;border-radius:9px;margin-top:12px;line-height:1.75}
+.verdict b{font-weight:700}
+.verdict.pass{background:var(--ok-soft);color:#046C4E;border:1px solid #A7E8CB}
+.verdict.fail{background:var(--err-soft);color:#B42318;border:1px solid #FCC}
+.verdict.info{background:var(--accent-soft);color:#1E40AF;border:1px solid #C7D7FE}
+.verdict.warn{background:var(--warn-soft);color:#7A4A05;border:1px solid #F2D19B}
+.statstrip{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.statstrip span{font-family:var(--mono);font-size:.66rem;color:var(--ink-2);background:var(--surface);
+  border:1px solid var(--border);border-radius:6px;padding:5px 9px}
+.statstrip span b{color:var(--ink);font-weight:700}
+
+/* ---------- module 1 : wire the workflow ---------- */
+.wgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media(max-width:900px){.wgrid{grid-template-columns:minmax(0,1fr)}}
+.modebar{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:3px;width:max-content;max-width:100%;flex-wrap:wrap}
+.mbtn{border:none;background:none;border-radius:6px;padding:8px 13px;font-size:.79rem;font-weight:600;
+  color:var(--ink-3);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mbtn:hover{color:var(--ink-2)}
+.mbtn.on{background:var(--ink);color:#fff}
+.swatch{width:20px;height:0;border-top:2.5px solid var(--ink-3);display:block}
+.mbtn.on .swatch{border-color:#fff}
+.swatch.dot{border-top-style:dotted;border-top-width:3px}
+.modedesc{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);line-height:1.7;margin:10px 0 12px}
+.modedesc b{color:var(--ink-2);font-weight:500}
+.boardscroll{overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:12px;
+  background:radial-gradient(circle,var(--border-strong) 1px,transparent 1px) 0 0/20px 20px,var(--surface);
+  -webkit-overflow-scrolling:touch}
+.boardscroll.lit{border-color:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.wcanvas{position:relative;min-width:880px;height:460px}
+.wcanvas svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.tierlab{position:absolute;font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);opacity:.75;left:14px;z-index:0}
+.tierlab.t1{top:9px}.tierlab.t2{top:158px}
+.tierrule{position:absolute;left:0;right:0;top:150px;border-top:1px dashed var(--border-strong);opacity:.85;z-index:0}
+.gnode{position:absolute;transform:translate(-50%,-50%);z-index:3;cursor:pointer}
+.nbtn{display:block;width:150px;text-align:left;background:var(--surface);border:1.5px solid var(--border-strong);
+  border-left:3px solid var(--bc,var(--border-strong));border-radius:9px;padding:9px 11px;
+  box-shadow:0 3px 10px rgba(16,24,40,.07);transition:border-color .14s,box-shadow .14s,background .14s}
+.gnode:hover .nbtn{border-color:var(--accent);box-shadow:0 4px 14px rgba(37,99,235,.14)}
+.gnode .nt{display:block;font-size:.745rem;font-weight:600;line-height:1.28;color:var(--ink)}
+.gnode .nm{display:block;font-family:var(--mono);font-size:.6rem;color:var(--ink-3);margin-top:3px;line-height:1.3}
+.gnode.trig{--bc:#0EA5E9}.gnode.agent{--bc:#7C3AED}.gnode.code{--bc:#D97706}.gnode.mail{--bc:#DC2626}
+.gnode.model{--bc:#2563EB}.gnode.mem{--bc:#059669}.gnode.tool{--bc:#0891B2}
+.gnode.isagent .nbtn{width:162px}
+.gnode.sub .nbtn{width:134px}
+.gnode.sel .nbtn{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft)}
+.gnode.active .nbtn{border-color:var(--ok);background:var(--ok-soft);box-shadow:0 0 0 5px var(--ok-soft)}
+.gnode.bad .nbtn{border-color:var(--err);background:var(--err-soft)}
+.sock{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--surface);
+  border:2px solid var(--border-strong);top:50%;margin-top:-4.5px;z-index:4}
+.sock.in{left:-5px}.sock.out{right:-5px}
+.gnode.isagent .sock.in{left:-5px}
+.sock.filled{background:var(--ink-3);border-color:var(--ink-3)}
+.subout{position:absolute;left:50%;top:-6px;margin-left:-4px;width:8px;height:8px;border-radius:2px;
+  background:var(--surface);border:2px solid var(--bc,var(--border-strong));z-index:4;transform:rotate(45deg)}
+.subout.filled{background:var(--bc)}
+.ports{position:absolute;left:0;right:0;top:100%;margin-top:-4px;display:flex;justify-content:center;gap:13px;z-index:4}
+.port{width:8px;height:8px;border-radius:50%;background:var(--surface);border:2px solid var(--border-strong);display:block}
+.port.req{border-color:#C4B5FD}
+.port.filled{background:#7C3AED;border-color:#7C3AED}
+.portcap{position:absolute;left:0;right:0;top:100%;margin-top:9px;text-align:center;white-space:nowrap;
+  font-family:var(--mono);font-size:.5rem;letter-spacing:.02em;color:var(--ink-3)}
+.whint{font-family:var(--mono);font-size:.72rem;color:var(--ink-3);margin:12px 0 0;line-height:1.7}
+.whint b{color:var(--ink-2)}
+.scrollnote{font-family:var(--mono);font-size:.64rem;color:var(--ink-3);margin-top:7px;display:none}
+@media(max-width:960px){.scrollnote{display:block}}
+.need{font-family:var(--mono);font-size:.7rem;color:var(--ink-2);line-height:1.55}
+.need .gh{font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+  margin:12px 0 5px;padding-top:9px;border-top:1px solid var(--border)}
+.need .gh:first-child{margin-top:0;padding-top:0;border-top:none}
+.need .r{display:flex;justify-content:space-between;gap:9px;padding:5px 0;align-items:flex-start}
+.need .r .l{display:block;color:var(--ink-3);font-size:.63rem;margin-top:2px}
+.need .yes{color:var(--ok);font-weight:700}.need .no{color:var(--ink-3)}
+.keylist{font-family:var(--mono);font-size:.68rem;color:var(--ink-2);line-height:1.65}
+.keylist .kr{display:flex;gap:9px;padding:6px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.keylist .kr:last-child{border-bottom:none}
+.keylist .kd{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.keylist .kt{color:var(--ink-3);font-size:.63rem}
+.term-out{margin-top:16px;background:#0E1420;border-radius:10px;overflow:hidden;border:1px solid #1C2536}
+.term-bar{padding:9px 14px;background:#141B29;border-bottom:1px solid #1C2536;display:flex;align-items:center;gap:8px}
+.term-bar .dots{display:flex;gap:5px}
+.term-bar .dots i{width:9px;height:9px;border-radius:50%;background:#2A3547;display:block;transition:all .3s}
+.term-bar .dots i.on{background:#3DD68C;box-shadow:0 0 8px rgba(61,214,140,.7)}
+.term-bar .ttl{font-family:var(--mono);font-size:.68rem;color:#5C6B85;margin-left:6px}
+.term-body{padding:15px 17px;font-family:var(--mono);font-size:.71rem;line-height:1.95;color:#9FB0CC;
+  min-height:150px;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.term-body .p{color:#4E93F7}.term-body .g{color:#3DD68C}.term-body .r{color:#F97583}
+.term-body .y{color:#E3B341}.term-body .d{color:#5C6B85}.term-body .w{color:#D8E2F0}
+.caret{display:inline-block;width:7px;height:.95em;background:#3DD68C;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- module 2 : the debug call ---------- */
+.g2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media(max-width:900px){.g2{grid-template-columns:minmax(0,1fr)}}
+.symp{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--err);
+  border-radius:0 11px 11px 0;padding:14px 16px;margin-bottom:14px}
+.symp .lb{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--err);display:block;margin-bottom:6px}
+.symp .tx{font-size:.97rem;font-weight:600;line-height:1.45;margin-bottom:11px}
+.arti{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface-2)}
+.arti .ah{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  padding:7px 12px;background:var(--surface);border-bottom:1px solid var(--border)}
+.arti .ab{padding:11px 13px;font-family:var(--mono);font-size:.7rem;line-height:1.75;color:var(--ink-2);
+  overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.arti .ab .you{color:var(--ink);font-weight:700}
+.arti .ab .bot{color:var(--ink-2)}
+.arti .ab .em{color:var(--err);font-weight:700}
+.arti .ab .dim{color:var(--ink-3)}
+.arti .ab .okc{color:var(--ok);font-weight:700}
+.arti.err{border-color:#F5C2C0;background:var(--err-soft)}
+.arti.err .ah{background:#FEE4E2;border-bottom-color:#F5C2C0;color:#B42318}
+.arti.err .ab{color:#B42318}
+.acts{display:grid;gap:9px}
+.act{text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:13px 15px}
+.act .h{font-size:.86rem;font-weight:600;margin-bottom:3px;line-height:1.35}
+.act .d{font-size:.74rem;color:var(--ink-3);line-height:1.45}
+.act:hover:not(:disabled){border-color:var(--accent);box-shadow:0 2px 10px rgba(16,24,40,.07)}
+.act:disabled{cursor:default}
+.act.right{border-color:var(--ok);background:var(--ok-soft)}
+.act.wrongpick{border-color:var(--err);background:var(--err-soft)}
+.impact{font-family:var(--mono);font-size:.7rem;color:var(--ink-2);line-height:1.6}
+.impact .rowl{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--border);padding:7px 0;align-items:flex-start}
+.impact .rowl:last-child{border-bottom:none}
+.impact .rowl span:last-child{text-align:right}
+.impact .bad2{color:var(--err)}.impact .good2{color:var(--ok)}
+.impact .idle{color:var(--ink-3)}
+
+/* ---------- footer ---------- */
+.foot{position:relative;z-index:1;border-top:1px solid var(--border);background:rgba(255,255,255,.6)}
+.footin{max-width:1240px;margin:0 auto;padding:20px 22px 34px}
+.footrow{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:.76rem;color:var(--ink-3)}
+.footrow b{color:var(--ink-2);font-weight:600}
+.footdis{margin-top:9px;font-family:var(--mono);font-size:.64rem;color:var(--ink-3);line-height:1.7}
+.verdict code{font-weight:700;font-family:var(--mono)}
+@media(max-width:560px){
+  .topinner{gap:8px;padding:12px 16px 0}
+  .brandmark{padding-bottom:8px}
+  .tabs{margin-left:0;width:100%;gap:0}
+  .tab{flex:1;min-width:0;padding:9px 4px 11px;font-size:.73rem;text-align:center}
+  .tab .step{margin-right:4px}
+  .page{padding:24px 16px 44px}
+  .footin{padding:18px 16px 28px}
+  h1{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="topinner">
+  <div class="brandmark"><span class="dotlogo"></span><span class="n">n8n Multi-Agent Lab</span><span class="v">v1.0</span></div>
+  <div class="tabs">
+    <button class="tab active" data-v="v1"><span class="step">01</span>Wire the Workflow</button>
+    <button class="tab" data-v="v2"><span class="step">02</span>The Debug Call</button>
+  </div>
+</div></div>
+
+<!-- ================= MODULE 01 ================= -->
+<section class="view on" id="v1">
+  <div class="page">
+    <div class="head">
+      <div class="kicker">Module 01 · Build</div>
+      <h1>Wire the workflow</h1>
+      <p class="lede">Twelve n8n nodes, no connections. Click a node, then click where it should go. The catch: n8n has
+        <b>two kinds of connection</b> and they are not interchangeable. Pick the wrong mode and the canvas will tell you why.</p>
+    </div>
+    <div class="statstrip">
+      <span><b>12</b> nodes</span><span><b>3</b> agents</span><span><b>3</b> chat models</span>
+      <span><b>2</b> search tools</span><span><b>1</b> email</span><span><b>11</b> connections</span>
+    </div>
+    <div class="wgrid">
+      <div>
+        <div class="modebar">
+          <button class="mbtn on" id="modeMain" data-m="main"><span class="swatch"></span>Main line</button>
+          <button class="mbtn" id="modeSub" data-m="sub"><span class="swatch dot"></span>Sub-node</button>
+        </div>
+        <div class="modedesc" id="modeDesc"></div>
+
+        <div class="boardscroll" id="boardscroll">
+          <div class="wcanvas" id="board">
+            <svg class="wires" id="wires" preserveAspectRatio="none"></svg>
+            <span class="tierlab t1">Main line — left to right</span>
+            <span class="tierrule"></span>
+            <span class="tierlab t2">Sub-node shelf — wires go upward into a port</span>
+          </div>
+        </div>
+        <div class="scrollnote">◀ the board scrolls sideways — drag it to reach the Gmail node ▶</div>
+        <p class="whint" id="whint">Click a node to start a connection.</p>
+
+        <div class="bar">
+          <button class="btn" id="runW" disabled>Test workflow</button>
+          <button class="btn sec" id="clearW">Clear connections</button>
+          <span class="leds" id="wleds"></span>
+          <span class="reqs" id="wcount">0 connections drawn</span>
+        </div>
+        <div class="verdict info" id="wv">An n8n workflow reads left to right. Everything an agent <b>thinks with</b> hangs underneath it.</div>
+
+        <div class="term-out">
+          <div class="term-bar"><span class="dots"><i id="ld0"></i><i id="ld1"></i><i id="ld2"></i></span>
+            <span class="ttl">executions · n8n</span></div>
+          <div class="term-body" id="logBody"><span class="d">idle — draw all 11 connections, then press Test workflow</span><span class="caret"></span></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <div class="card-h"><span class="t">What it still needs</span><span class="m" id="needCount">0 OF 11</span></div>
+          <div class="card-b"><div class="need" id="need"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="t">Port key</span><span class="m">AI AGENT</span></div>
+          <div class="card-b"><div class="keylist">
+            <div class="kr"><span class="kd" style="background:#7C3AED"></span><span><b>Chat Model</b> — required<span class="kt">the agent's brain. Empty port, and the node errors before it does anything at all.</span></span></div>
+            <div class="kr"><span class="kd" style="background:#059669"></span><span><b>Memory</b> — optional<span class="kt">holds earlier turns of the same chat, so "and its technical view?" still makes sense.</span></span></div>
+            <div class="kr"><span class="kd" style="background:#0891B2"></span><span><b>Tool</b> — zero or many<span class="kt">anything the agent may choose to call: SerpAPI, an HTTP Request — or another agent.</span></span></div>
+            <div class="kr"><span class="kd" style="background:#8A94A6"></span><span><b>Solid, left to right</b><span class="kt">the main line. It carries items of data from one node to the next.</span></span></div>
+            <div class="kr"><span class="kd" style="background:#C4B5FD"></span><span><b>Dotted, upward</b><span class="kt">a sub-node. It doesn't pass data along — it gives the parent a capability.</span></span></div>
+          </div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODULE 02 ================= -->
+<section class="view" id="v2">
+  <div class="page">
+    <div class="head">
+      <div class="kicker">Module 02 · Diagnosis</div>
+      <h1>The debug call</h1>
+      <p class="lede">Six real failures from this exact workflow. Read the symptom — an error, a bad email, a wrong answer —
+        and make the fix call. One option repairs it. The other two are what people try first.</p>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="symp">
+          <span class="lb" id="dtag">Symptom 01</span>
+          <span class="tx" id="dtitle"></span>
+          <div id="dart"></div>
+        </div>
+        <div class="acts" id="dacts"></div>
+        <div class="verdict" id="d2v" style="display:none"></div>
+        <div class="bar">
+          <button class="btn" id="nextD" style="display:none">Next symptom →</button>
+          <button class="btn sec" id="reset2">Start over</button>
+          <span class="leds" id="dleds" style="margin-left:4px"></span>
+          <span class="reqs" id="dno"></span>
+        </div>
+      </div>
+      <aside class="card">
+        <div class="card-h"><span class="t">What this changes</span><span class="m">AFTER THE FIX</span></div>
+        <div class="card-b"><div class="impact" id="impact"></div></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<footer class="foot"><div class="footin">
+  <div class="footrow">
+    <span>Be10x · Daily Drop — <b>Agentic Automation: AI-Driven Multi-Agent Workflow Engineering</b></span>
+    <span>Built by <b>Eshmith Saideep</b></span>
+  </div>
+  <div class="footdis">Educational build. The Infosys analysis used throughout is a worked example for teaching n8n wiring — it is not financial advice.</div>
+</div></footer>
+
+<script>
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab').forEach(t=>{t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  t.classList.add('active');document.getElementById(t.dataset.v).classList.add('on');
+  if(t.dataset.v==='v1')setTimeout(drawWires,40);
+  scrollTo(0,0);
+};});
+
+/* =========================================================
+   MODULE 01 — WIRE THE WORKFLOW
+   ========================================================= */
+const NODES=[
+ {id:'trigger',t:'When chat message received',m:'Chat Trigger',x:11,y:15,cls:'trig',row:'main',mainOut:true,mainIn:false},
+ {id:'orch',   t:'Orchestrator Agent',        m:'AI Agent',    x:38,y:15,cls:'agent',row:'main',mainOut:true,mainIn:true,agent:true},
+ {id:'code',   t:'Code in JavaScript',        m:'Code',        x:65,y:15,cls:'code',row:'main',mainOut:true,mainIn:true},
+ {id:'gmail',  t:'Send a message',            m:'Gmail',       x:87.5,y:15,cls:'mail',row:'main',mainOut:false,mainIn:true},
+
+ {id:'m_orch',t:'OpenAI Chat Model',m:'gpt-4o-mini',  x:8, y:47,cls:'model',row:'shelf',sub:'model'},
+ {id:'mem',   t:'Simple Memory',    m:'window buffer',x:25,y:47,cls:'mem',  row:'shelf',sub:'memory'},
+ {id:'fund',  t:'Fundamental Analysis Agent',m:'AI Agent · used as a tool',x:51,y:47,cls:'agent',row:'shelf',sub:'tool',agent:true},
+ {id:'tech',  t:'Technical Analysis Agent',  m:'AI Agent · used as a tool',x:80,y:47,cls:'agent',row:'shelf',sub:'tool',agent:true},
+
+ {id:'m_fund',t:'OpenAI Chat Model',m:'gpt-4o-mini',x:36.5,y:84,cls:'model',row:'shelf',sub:'model'},
+ {id:'s_fund',t:'SerpAPI',          m:'live web search',x:55,  y:84,cls:'tool',row:'shelf',sub:'tool'},
+ {id:'m_tech',t:'OpenAI Chat Model',m:'gpt-4o-mini',x:72,  y:84,cls:'model',row:'shelf',sub:'model'},
+ {id:'s_tech',t:'SerpAPI',          m:'live web search',x:89.5,y:84,cls:'tool',row:'shelf',sub:'tool'}
+];
+
+const REQ=[
+ {g:'Main line',          from:'trigger',to:'orch', kind:'main',label:'the question enters the Orchestrator'},
+ {g:'Main line',          from:'orch',   to:'code', kind:'main',label:'the merged answer goes to the Code node'},
+ {g:'Main line',          from:'code',   to:'gmail',kind:'main',label:'the HTML report goes to Gmail'},
+ {g:'Orchestrator ports', from:'m_orch', to:'orch', kind:'sub', label:'Chat Model port · required'},
+ {g:'Orchestrator ports', from:'mem',    to:'orch', kind:'sub', label:'Memory port · keeps the thread'},
+ {g:'Orchestrator ports', from:'fund',   to:'orch', kind:'sub', label:'Tool port · agent as a tool'},
+ {g:'Orchestrator ports', from:'tech',   to:'orch', kind:'sub', label:'Tool port · agent as a tool'},
+ {g:'Fundamental ports',  from:'m_fund', to:'fund', kind:'sub', label:'Chat Model port · its own brain'},
+ {g:'Fundamental ports',  from:'s_fund', to:'fund', kind:'sub', label:'Tool port · live search'},
+ {g:'Technical ports',    from:'m_tech', to:'tech', kind:'sub', label:'Chat Model port · its own brain'},
+ {g:'Technical ports',    from:'s_tech', to:'tech', kind:'sub', label:'Tool port · live search'}
+];
+
+const PTITLE={model:'Chat Model — required',memory:'Memory — optional',tool0:'Tool',tool1:'Tool'};
+const NAMEOF={};NODES.forEach(n=>NAMEOF[n.id]=n.t);
+
+let mode='main', conns=[], sel=null, running=false, wasComplete=false;
+const board=document.getElementById('board');
+const wires=document.getElementById('wires');
+const wv=document.getElementById('wv');
+const logBody=document.getElementById('logBody');
+
+function N(id){return NODES.find(n=>n.id===id);}
+function say(cls,html){wv.className='verdict '+cls;wv.innerHTML=html;}
+function hint(html){document.getElementById('whint').innerHTML=html;}
+
+const MODEDESC={
+ main:'<b>Main line.</b> Solid, drawn left to right, out of one node and into the next. It carries the actual data — a list of items — from step to step.',
+ sub:'<b>Sub-node.</b> Dotted, drawn upward from the shelf into a port underneath a parent agent. It carries no data along the line; it gives the parent a capability.'
+};
+function setMode(m){
+  mode=m;sel=null;
+  document.getElementById('modeMain').classList.toggle('on',m==='main');
+  document.getElementById('modeSub').classList.toggle('on',m==='sub');
+  document.getElementById('modeDesc').innerHTML=MODEDESC[m];
+  hint(m==='main'?'Click a main-line node, then click the node it should feed.'
+                 :'Click a node on the shelf, then click the agent whose port it belongs to.');
+  render();drawWires();
+}
+document.getElementById('modeMain').onclick=()=>setMode('main');
+document.getElementById('modeSub').onclick=()=>setMode('sub');
+
+/* ---------- node rendering ---------- */
+function render(active){
+  board.querySelectorAll('.gnode').forEach(e=>e.remove());
+  NODES.forEach(n=>{
+    const d=document.createElement('div');
+    d.className='gnode '+n.cls+(n.agent?' isagent':'')+(n.row==='shelf'&&!n.agent?' sub':'')
+      +(sel===n.id?' sel':'')+(active&&active.has(n.id)?' active':'');
+    d.id='nd-'+n.id;
+    d.style.left=n.x+'%';d.style.top=n.y+'%';
+    let h='';
+    if(n.row==='shelf')h+='<span class="subout" data-so="1"></span>';
+    if(n.mainIn)h+='<span class="sock in" data-si="1"></span>';
+    if(n.mainOut)h+='<span class="sock out" data-so2="1"></span>';
+    h+='<button class="nbtn" type="button"><span class="nt">'+n.t+'</span><span class="nm">'+n.m+'</span></button>';
+    if(n.agent){
+      h+='<span class="ports">'+['model','memory','tool0','tool1'].map(p=>
+        '<i class="port'+(p==='model'?' req':'')+'" data-p="'+p+'" title="'+PTITLE[p]+'"></i>').join('')+'</span>';
+      h+='<span class="portcap">model · mem · tool · tool</span>';
+    }
+    d.innerHTML=h;
+    d.onclick=()=>pick(n.id);
+    board.appendChild(d);
+  });
+  paintSockets();
+}
+function paintSockets(){
+  NODES.forEach(n=>{
+    const el=document.getElementById('nd-'+n.id);if(!el)return;
+    const so=el.querySelector('.subout');
+    if(so)so.classList.toggle('filled',conns.some(c=>c.kind==='sub'&&c.from===n.id));
+    const si=el.querySelector('.sock.in');
+    if(si)si.classList.toggle('filled',conns.some(c=>c.kind==='main'&&c.to===n.id));
+    const sout=el.querySelector('.sock.out');
+    if(sout)sout.classList.toggle('filled',conns.some(c=>c.kind==='main'&&c.from===n.id));
+    if(n.agent){
+      const used=portMap(n.id);
+      el.querySelectorAll('.port').forEach(p=>p.classList.toggle('filled',!!used[p.dataset.p]));
+    }
+  });
+}
+/* which connection sits in which port of an agent */
+function portMap(agentId){
+  const out={};let ti=0;
+  conns.filter(c=>c.kind==='sub'&&c.to===agentId).forEach(c=>{
+    if(c.port==='model')out.model=c;
+    else if(c.port==='memory')out.memory=c;
+    else {out['tool'+Math.min(ti,1)]=c;ti++;}
+  });
+  return out;
+}
+function portNameFor(c){
+  const m=portMap(c.to);
+  for(const k in m)if(m[k]===c)return k;
+  return 'tool1';
+}
+
+/* ---------- click / connect logic ---------- */
+function pick(id){
+  if(running)return;
+  const n=N(id);
+  if(sel===null){
+    if(mode==='main'){
+      if(n.row==='shelf')return say('fail','× <b>'+n.t+'</b> is sitting on the sub-node shelf. It has no left-to-right output at all — it attaches <b>upward</b>, into a port. Switch the mode to <b>Sub-node</b>.');
+      if(!n.mainOut)return say('fail','× Nothing comes out of <b>Send a message</b>. Gmail is the last stop on this workflow — the report leaves n8n there.');
+    }else{
+      if(n.id==='orch')return say('fail','× The <b>Orchestrator Agent</b> is not a sub-node — it is the parent. Sub-nodes are the things you hang <b>underneath</b> it: a chat model, a memory, a tool.');
+      if(!n.sub)return say('fail','× <b>'+n.t+'</b> is a main-line node. It has an input on the left and an output on the right, and nothing underneath. Sub-nodes are chat models, memories and tools.');
+    }
+    sel=id;
+    hint(mode==='main'
+      ? 'From <b>'+n.t+'</b> — now click the node it feeds. <span style="color:var(--ink-3)">(click it again to cancel)</span>'
+      : 'Holding <b>'+n.t+'</b> — now click the agent whose port it belongs to. <span style="color:var(--ink-3)">(click it again to cancel)</span>');
+    say('info',mode==='main'?'Main line selected. Solid, left to right.':'Sub-node selected. Dotted, upward into a port.');
+    render();return;
+  }
+  if(sel===id){sel=null;render();hint('Cancelled. Click a node to start a connection.');say('info','Nothing drawn.');return;}
+
+  const s=N(sel),t=n;
+  const fin=()=>{sel=null;render();drawWires();sync();hint(mode==='main'
+    ? 'Click a main-line node, then click the node it should feed.'
+    : 'Click a node on the shelf, then click the agent whose port it belongs to.');};
+
+  if(mode==='main'){
+    if(t.row==='shelf'){sel=null;render();
+      return say('fail','× You are drawing a <b>solid main-line connection into a sub-node</b>. That slot does not exist. <b>'+t.t+'</b> attaches the other way round — upward, dotted, into a port underneath its parent. Switch the mode to <b>Sub-node</b>.');}
+    if(!t.mainIn){sel=null;render();
+      return say('fail','× Nothing connects <b>into</b> a trigger. <b>When chat message received</b> is where the execution starts — it has an output on the right and no input at all. Every workflow needs exactly one of these.');}
+    if(conns.some(c=>c.kind==='main'&&c.from===sel&&c.to===id)){sel=null;render();
+      return say('fail','× That connection already exists. n8n will not draw the same wire twice — and a duplicate would not make the data arrive faster.');}
+    conns.push({from:sel,to:id,kind:'main'});
+  }else{
+    if(!t.agent){sel=null;render();
+      return say('fail','× <b>'+t.t+'</b> has no ports underneath it. Only the <b>AI Agent</b> node exposes a Chat Model / Memory / Tool row — that strip of sockets under the box is what makes it an agent rather than a plain node.');}
+    if((s.id==='fund'||s.id==='tech')&&(t.id==='fund'||t.id==='tech')){sel=null;render();
+      return say('fail','× The two specialists <b>never talk to each other</b> and neither knows the other exists. Only the Orchestrator sees both. Attach them to the Orchestrator\'s Tool port instead.');}
+    const port=s.sub;
+    if(conns.some(c=>c.kind==='sub'&&c.from===sel&&c.to===id)){sel=null;render();
+      return say('fail','× <b>'+s.t+'</b> is already on that port.');}
+    if(port==='model'){
+      const ex=conns.find(c=>c.kind==='sub'&&c.to===id&&c.port==='model');
+      if(ex){sel=null;render();
+        return say('fail','× The <b>Chat Model port holds exactly one model</b>. <b>'+t.t+'</b> already has one attached. An agent has one brain — remove the first model if you want a different one.');}
+    }
+    if(port==='memory'){
+      const ex=conns.find(c=>c.kind==='sub'&&c.to===id&&c.port==='memory');
+      if(ex){sel=null;render();
+        return say('fail','× The <b>Memory port holds exactly one memory</b>. <b>'+t.t+'</b> already has one attached.');}
+    }
+    conns.push({from:sel,to:id,kind:'sub',port:port});
+  }
+
+  const made=conns[conns.length-1];
+  const req=REQ.find(r=>r.from===made.from&&r.to===made.to&&r.kind===made.kind);
+  if(req){
+    say('pass','✓ '+NAMEOF[made.from]+' → '+NAMEOF[made.to]+' — <b>'+req.label+'</b>.'
+      +(made.kind==='sub'?' Notice the wire: dotted, and it goes <b>up</b>. That is the tell for a sub-node.'
+                         :' Solid, left to right. This wire carries items of data.'));
+  }else if(made.kind==='sub'&&made.port==='memory'){
+    say('warn','! Attached — and n8n will allow it. Every agent has a Memory port. But a specialist here is <b>called once per question and never sees a follow-up</b>, so the memory does nothing except cost you a slot. Simple Memory belongs on the Orchestrator, the one node that actually holds the conversation.');
+  }else if(made.kind==='sub'&&made.port==='model'){
+    say('warn','! Legal, but not this build. One <b>OpenAI Chat Model</b> node can feed several agents. Here each agent gets the model sitting directly under it, so that pairing is the one the checklist is looking for.');
+  }else{
+    say('warn','! Drawn — but that connection is not part of this workflow. Check the list on the right for the 11 it needs.');
+  }
+  fin();
+}
+
+/* ---------- geometry + svg ---------- */
+function rectOf(el){
+  const b=board.getBoundingClientRect(),r=el.getBoundingClientRect();
+  return {x:r.left-b.left,y:r.top-b.top,w:r.width,h:r.height};
+}
+function mainOutPt(id){const e=document.querySelector('#nd-'+id+' .nbtn');if(!e)return null;
+  const r=rectOf(e);return {x:r.x+r.w+4,y:r.y+r.h/2};}
+function mainInPt(id){const e=document.querySelector('#nd-'+id+' .nbtn');if(!e)return null;
+  const r=rectOf(e);return {x:r.x-5,y:r.y+r.h/2};}
+function subOutPt(id){const e=document.querySelector('#nd-'+id+' .subout');if(!e)return null;
+  const r=rectOf(e);return {x:r.x+r.w/2,y:r.y};}
+function portPt(agentId,portName){
+  const e=document.querySelector('#nd-'+agentId+' .port[data-p="'+portName+'"]');if(!e)return null;
+  const r=rectOf(e);return {x:r.x+r.w/2,y:r.y+r.h};}
+
+function key(c){return c.kind+':'+c.from+'>'+c.to;}
+
+function drawWires(hot){
+  const b=board.getBoundingClientRect();
+  if(!b.width)return;
+  wires.setAttribute('viewBox','0 0 '+b.width+' '+b.height);
+  let out='<defs>'
+    +'<marker id="ahN" viewBox="0 0 9 9" refX="7.5" refY="4.5" markerWidth="5.6" markerHeight="5.6" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8A94A6"/></marker>'
+    +'<marker id="ahG" viewBox="0 0 9 9" refX="7.5" refY="4.5" markerWidth="5.6" markerHeight="5.6" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#059669"/></marker>'
+    +'<marker id="ahW" viewBox="0 0 9 9" refX="7.5" refY="4.5" markerWidth="5.6" markerHeight="5.6" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#D97706"/></marker>'
+    +'</defs>';
+  conns.forEach(c=>{
+    const on=hot&&hot.has(key(c));
+    const extra=!REQ.some(r=>r.from===c.from&&r.to===c.to&&r.kind===c.kind);
+    const col=on?'#059669':(extra?'#D97706':'#8A94A6');
+    const mk=on?'ahG':(extra?'ahW':'ahN');
+    let a,z,d;
+    if(c.kind==='main'){
+      a=mainOutPt(c.from);z=mainInPt(c.to);if(!a||!z)return;
+      const k=Math.max(30,Math.abs(z.x-a.x)*0.45);
+      d='M'+a.x+','+a.y+' C'+(a.x+k)+','+a.y+' '+(z.x-k)+','+z.y+' '+z.x+','+z.y;
+      out+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(on?3.2:2.1)+'" stroke-linecap="round" marker-end="url(#'+mk+')"/>';
+    }else{
+      a=subOutPt(c.from);z=portPt(c.to,portNameFor(c));if(!a||!z)return;
+      const k=Math.max(34,Math.abs(a.y-z.y)*0.5);
+      d='M'+a.x+','+a.y+' C'+a.x+','+(a.y-k)+' '+z.x+','+(z.y+k)+' '+z.x+','+z.y;
+      out+='<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+(on?3.2:2.1)+'" stroke-linecap="round" stroke-dasharray="1 5" marker-end="url(#'+mk+')"/>';
+    }
+  });
+  wires.innerHTML=out;
+}
+
+/* ---------- checklist ---------- */
+function has(r){return conns.some(c=>c.from===r.from&&c.to===r.to&&c.kind===r.kind);}
+function sync(){
+  const done=REQ.filter(has).length;
+  document.getElementById('needCount').textContent=done+' OF 11';
+  document.getElementById('wcount').textContent=conns.length+' connection'+(conns.length===1?'':'s')+' drawn';
+  document.getElementById('wleds').innerHTML=REQ.map(r=>'<span class="led'+(has(r)?' on':'')+'"></span>').join('');
+  let g='',html='';
+  REQ.forEach(r=>{
+    if(r.g!==g){g=r.g;html+='<div class="gh">'+g+'</div>';}
+    html+='<div class="r"><span>'+NAMEOF[r.from]+' → '+NAMEOF[r.to]
+      +'<span class="l">'+r.label+'</span></span><span class="'+(has(r)?'yes':'no')+'">'+(has(r)?'✓':'—')+'</span></div>';
+  });
+  document.getElementById('need').innerHTML=html;
+  const ok=done===REQ.length;
+  document.getElementById('runW').disabled=!ok||running;
+  document.getElementById('boardscroll').classList.toggle('lit',ok);
+  if(ok&&!running&&!wasComplete)say('pass','✓ All 11 connections are in place. Three solid wires along the main line, eight dotted wires going up into ports. Press <b>Test workflow</b>.');
+  wasComplete=ok;
+  paintSockets();
+}
+
+document.getElementById('clearW').onclick=()=>{
+  if(running)return;
+  conns=[];sel=null;render();drawWires();sync();
+  logBody.innerHTML='<span class="d">idle — draw all 11 connections, then press Test workflow</span><span class="caret"></span>';
+  ['ld0','ld1','ld2'].forEach(i=>document.getElementById(i).classList.remove('on'));
+  hint('Click a node to start a connection.');
+  say('info','Cleared. An n8n workflow reads left to right. Everything an agent <b>thinks with</b> hangs underneath it.');
+};
+
+/* ---------- test workflow ---------- */
+const RUN=[
+ {ms:620,nodes:['trigger'],wires:[],lines:[
+   '<span class="d">▸</span> <span class="p">When chat message received</span> <span class="d">· Chat Trigger</span>',
+   '  <span class="d">chatInput:</span> <span class="w">"Analyze Infosys"</span>']},
+ {ms:620,nodes:['trigger','orch'],wires:['main:trigger>orch'],lines:[
+   '<span class="d">▸</span> <span class="p">Orchestrator Agent</span> <span class="d">receives 1 item</span>']},
+ {ms:760,nodes:['orch','m_orch','mem'],wires:['sub:m_orch>orch','sub:mem>orch'],lines:[
+   '  <span class="g">↑</span> Chat Model <span class="d">gpt-4o-mini · connected</span>',
+   '  <span class="g">↑</span> Simple Memory <span class="d">window buffer · 0 earlier turns in this session</span>']},
+ {ms:700,nodes:['orch'],wires:[],lines:[
+   '  <span class="y">plan</span> <span class="d">two tool descriptions match this question — calling both in the same turn</span>']},
+ {ms:820,nodes:['orch','fund','tech'],wires:['sub:fund>orch','sub:tech>orch'],lines:[
+   '  <span class="g">↑</span> Tool <span class="w">Fundamental Analysis Agent</span> <span class="d">"Infosys — what is worth buying?"</span>',
+   '  <span class="g">↑</span> Tool <span class="w">Technical Analysis Agent</span> <span class="d">"Infosys — when to buy?"</span>']},
+ {ms:1000,nodes:['fund','tech','m_fund','s_fund','m_tech','s_tech'],
+  wires:['sub:m_fund>fund','sub:s_fund>fund','sub:m_tech>tech','sub:s_tech>tech'],lines:[
+   '    <span class="g">↑</span> OpenAI Chat Model <span class="d">×2 · gpt-4o-mini</span>',
+   '    <span class="g">↑</span> SerpAPI <span class="d">"Infosys quarterly results, deal wins, sector demand"</span>',
+   '    <span class="g">↑</span> SerpAPI <span class="d">"Infosys trend, support, resistance, RSI, MACD"</span>']},
+ {ms:820,nodes:['fund','tech'],wires:['sub:fund>orch','sub:tech>orch'],lines:[
+   '  <span class="g">←</span> Fundamental View <span class="g">Bullish</span> <span class="d">· steady deal wins, sentiment positive</span>',
+   '  <span class="g">←</span> Technical View <span class="y">Neutral</span> <span class="d">· trading near resistance</span>']},
+ {ms:760,nodes:['orch'],wires:[],lines:[
+   '<span class="d">▸</span> <span class="p">Orchestrator Agent</span> <span class="d">merges → Fundamental Insights / Technical Insights / Final Summary</span>']},
+ {ms:700,nodes:['orch','code'],wires:['main:orch>code'],lines:[
+   '<span class="d">▸</span> <span class="p">Code in JavaScript</span> <span class="d">return [{ json: { html } }]</span> <span class="g">1 item</span>']},
+ {ms:700,nodes:['code','gmail'],wires:['main:code>gmail'],lines:[
+   '<span class="d">▸</span> <span class="p">Send a message</span> <span class="d">· Gmail · Message Type: HTML</span> <span class="g">sent</span>']},
+ {ms:400,nodes:[],wires:[],lines:[
+   '<span class="g">✓ Execution finished</span> <span class="d">· 12 nodes · 3 agents · 2 searches · 1 email</span>']}
+];
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+
+document.getElementById('runW').onclick=async()=>{
+  if(running)return;
+  const missing=REQ.filter(r=>!has(r));
+  if(missing.length){return say('fail','× It cannot run yet. Still missing: '
+    +missing.map(m=>'<b>'+NAMEOF[m.from]+' → '+NAMEOF[m.to]+'</b>').join(', ')+'.');}
+  running=true;sel=null;
+  document.getElementById('runW').disabled=true;
+  document.getElementById('clearW').disabled=true;
+  ['ld0','ld1','ld2'].forEach((i,k)=>setTimeout(()=>document.getElementById(i).classList.add('on'),k*160));
+  logBody.innerHTML='';
+  say('info','running…');
+  for(const step of RUN){
+    render(new Set(step.nodes));
+    drawWires(new Set(step.wires));
+    logBody.innerHTML+=step.lines.join('\n')+'\n';
+    logBody.scrollTop=logBody.scrollHeight;
+    await wait(step.ms);
+  }
+  render();drawWires();
+  logBody.innerHTML+='<span class="caret"></span>';
+  logBody.scrollTop=logBody.scrollHeight;
+  running=false;
+  document.getElementById('clearW').disabled=false;
+  sync();
+  say('pass','✓ It ran. Look at what the log shows: the Orchestrator <b>never researched anything itself</b> — it read two tool descriptions, called both specialists in the same turn, and merged what came back.'
+    +'<br><br>The three solid wires moved <b>data</b>. The eight dotted wires gave three agents their <b>capabilities</b>. Change one dotted wire and the workflow still runs — it just gets quietly worse, which is exactly what Module 02 is about.'
+    +'<br><br><span style="opacity:.75">Educational build — the Infosys verdict above is a teaching example, not financial advice.</span>');
+};
+
+/* ---------- boot module 1 ---------- */
+setMode('main');
+sync();
+drawWires();
+addEventListener('resize',()=>drawWires());
+addEventListener('orientationchange',()=>setTimeout(drawWires,200));
+document.getElementById('boardscroll').addEventListener('scroll',()=>drawWires());
+if(window.ResizeObserver)new ResizeObserver(()=>drawWires()).observe(board);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{render();drawWires();});
+setTimeout(()=>{render();drawWires();},250);
+
+/* =========================================================
+   MODULE 02 — THE DEBUG CALL
+   ========================================================= */
+const DEBUG=[
+{
+ title:'The agent says it cannot see the news.',
+ ah:'chat · "Analyze Infosys"',
+ art:'<span class="you">you</span>  Analyze Infosys\n'
+    +'<span class="bot">agent</span>  <span class="em">I don\'t have access to current information or real-time\n'
+    +'       data about Infosys.</span> For the latest quarterly results and\n'
+    +'       news, please check a financial news site.',
+ acts:[
+  {h:'Attach SerpAPI to the Fundamental Analysis Agent\'s Tool port',d:'give the agent somewhere to actually look',ok:true},
+  {h:'Rewrite the system prompt to say "always use current data"',d:'instruct it more firmly',ok:false},
+  {h:'Swap gpt-4o-mini for a larger chat model',d:'a better brain should know more',ok:false}],
+ why:'<b>The Tool port is empty.</b> A chat model can only answer from what it was trained on; it has no way to reach the web unless you hand it one. SerpAPI on the Tool port is that way. A system prompt can demand current data all day — with nothing on the Tool port there is nowhere to get it, and a bigger model just writes the same refusal more elegantly.',
+ impact:[['searches per run','0 → 2','good2'],['answer source','training data → live web','good2'],['fix lives in','the Tool port, not the prompt','good2']]
+},
+{
+ title:'The Orchestrator errors the instant it runs.',
+ ah:'execution 4812 · failed',
+ kind:'err',
+ art:'ERROR  Problem in node \'Orchestrator Agent\'\n'
+    +'A Chat Model sub-node must be connected and enabled.\n\n'
+    +'Execution stopped · 0 tools called · 0 items produced',
+ acts:[
+  {h:'Attach an OpenAI Chat Model to the Orchestrator\'s Chat Model port',d:'fill the one required port',ok:true},
+  {h:'Set a max-iterations limit on the agent',d:'stop it spinning',ok:false},
+  {h:'Re-enter the OpenAI credential',d:'the key has probably expired',ok:false}],
+ why:'<b>The Chat Model port is required.</b> Your agent has a brain slot — leave it empty and nothing runs. The giveaway is in the log: it failed with <b>zero tools called</b>, so it never got as far as deciding anything. A credential problem or a runaway loop would both show the agent starting first. This one never started.',
+ impact:[['nodes executed','0 → 12','good2'],['port filled','Chat Model · the required one','good2'],['tools called','none → 2','good2']]
+},
+{
+ title:'A follow-up question is treated as a brand-new one.',
+ ah:'chat · two turns, same session',
+ art:'<span class="you">you</span>  Analyze Infosys\n'
+    +'<span class="bot">agent</span>  <span class="dim">Fundamental Insights… Technical Insights… Final Summary…</span>\n\n'
+    +'<span class="you">you</span>  And its technical view?\n'
+    +'<span class="bot">agent</span>  <span class="em">Could you tell me which company you\'d like the technical\n'
+    +'       view on?</span>',
+ acts:[
+  {h:'Attach Simple Memory to the Orchestrator\'s Memory port',d:'let it keep the last few turns',ok:true},
+  {h:'Paste the previous answer into the system prompt',d:'remind it what was asked',ok:false},
+  {h:'Tell users to repeat the company name every time',d:'work around it',ok:false}],
+ why:'<b>The Memory port is empty.</b> Without it, every message arrives from a stranger — the agent has no idea there was a turn before this one. Simple Memory is a window buffer: it keeps the last N turns of the same session and hands them back on the next run. Pasting into the system prompt freezes one answer forever, and it is still wrong on the third turn.',
+ impact:[['turns remembered','0 → last 5','good2'],['follow-ups that work','none → all','good2'],['system prompt','unchanged','good2']]
+},
+{
+ title:'One specialist is never called.',
+ ah:'execution 4907 · succeeded',
+ art:'<span class="dim">▸</span> Orchestrator Agent  tools called: <span class="okc">Fundamental Analysis Agent</span>\n'
+    +'<span class="dim">▸</span> Code in JavaScript  1 item\n'
+    +'<span class="dim">▸</span> Send a message  sent\n\n'
+    +'<span class="dim">email body:</span>\n'
+    +'  Fundamental Insights  <span class="okc">✓ full section</span>\n'
+    +'  Technical Insights    <span class="em">— empty —</span>\n\n'
+    +'<span class="dim">Technical Analysis Agent · tool description:</span> <span class="em">"technical stuff"</span>',
+ acts:[
+  {h:'Rewrite the Technical agent\'s tool description to say when to use it',d:'tell the manager what this tool is for',ok:true},
+  {h:'Move the Technical agent onto the Orchestrator\'s Memory port',d:'so the manager can see it',ok:false},
+  {h:'Give the Technical agent a bigger chat model',d:'make it more capable',ok:false}],
+ why:'<b>The tool description is what the orchestrator reads to decide when to call a tool.</b> "technical stuff" tells it nothing, so it never gets picked. Rewrite it as: <i>"Use for timing — trend direction, support and resistance levels, RSI / MACD / EMA readings. Call this whenever the user asks when to buy or about price levels."</i> A vague description is the number one cause of an agent calling the wrong tool, or no tool at all. Note that the agent itself was never broken; nobody had told the manager it existed.',
+ impact:[['technical tool called','never → every run','good2'],['description','3 words → 1 sentence','good2'],['edited in','the tool node, not the model','good2']]
+},
+{
+ title:'The email arrives full of visible tags.',
+ ah:'inbox · Infosys — analysis report',
+ art:'<span class="dim">From:</span> n8n workflow   <span class="dim">To:</span> you\n'
+    +'<span class="dim">Subject:</span> Infosys — analysis report\n\n'
+    +'<span class="em">&lt;h2&gt;Fundamental Insights&lt;/h2&gt;&lt;ul&gt;&lt;li&gt;Steady deal\n'
+    +'wins across BFSI&lt;/li&gt;&lt;li&gt;Sentiment positive&lt;/li&gt;&lt;/ul&gt;\n'
+    +'&lt;h2&gt;Technical Insights&lt;/h2&gt;&lt;p&gt;Near resistance&lt;/p&gt;</span>',
+ acts:[
+  {h:'Set the Gmail node\'s Message Type to HTML',d:'one dropdown in Send a message',ok:true},
+  {h:'Strip the tags out inside the Code node',d:'send plain text instead',ok:false},
+  {h:'Send the report as an attachment instead',d:'sidestep the formatting',ok:false}],
+ why:'<b>Message Type is still set to Text.</b> Gmail was told to send characters, so it sent your markup as characters. The Code node did its job perfectly — the HTML is right there in the body. Stripping the tags would "fix" the symptom by deleting the formatting you built, and an attachment just makes the reader do extra work. An analysis nobody reads is worthless; delivery is part of the engineering.',
+ impact:[['Message Type','Text → HTML','good2'],['Code node','unchanged','good2'],['reader sees','raw markup → a styled report','good2']]
+},
+{
+ title:'Gmail receives nothing, and reports no error.',
+ ah:'execution 5031 · succeeded, 0 items',
+ art:'<span class="dim">▸</span> Orchestrator Agent  <span class="okc">1 item</span>  <span class="dim">full merged answer</span>\n'
+    +'<span class="dim">▸</span> Code in JavaScript  <span class="em">0 items</span>\n'
+    +'<span class="dim">▸</span> Send a message  <span class="em">not executed</span>\n\n'
+    +'<span class="dim">Code in JavaScript:</span>\n'
+    +'  const html = buildReport($json.output);\n'
+    +'  <span class="em">return html;</span>',
+ acts:[
+  {h:'Return [{ json: { html } }] from the Code node',d:'hand the next node a list of items',ok:true},
+  {h:'Reconnect the Gmail credential',d:'the account has probably signed out',ok:false},
+  {h:'Add a Wait node before Gmail',d:'give the Code node time to finish',ok:false}],
+ why:'<b>n8n moves data as items — a list of objects, each shaped { json: {…} }.</b> The Code node returned a bare string, so n8n read it as zero items. A node with zero items in simply does not run, and nothing errors, which is why this one is so quiet. Return <code>[{ json: { html } }]</code> and Gmail runs once with the field it expects.<br><br>Now look back at all six. Five were <b>a missing connection or an empty field</b>; the sixth was a return value in the wrong shape. Not one was a broken model. Almost every failure in a multi-agent workflow is wiring, not intelligence — which is exactly why the row of ports underneath the agent matters more than which model you picked.',
+ impact:[['items leaving Code','0 → 1','good2'],['Gmail runs','never → once','good2'],['error shown','none, ever','bad2']]
+}
+];
+
+let di=0;
+const dleds=document.getElementById('dleds');
+DEBUG.forEach(()=>dleds.insertAdjacentHTML('beforeend','<span class="led"></span>'));
+
+function loadD(){
+  const D=DEBUG[di];
+  document.getElementById('dtag').textContent='Symptom '+String(di+1).padStart(2,'0');
+  document.getElementById('dtitle').textContent=D.title;
+  document.getElementById('dart').innerHTML=
+    '<div class="arti'+(D.kind==='err'?' err':'')+'"><div class="ah">'+D.ah+'</div><div class="ab">'+D.art+'</div></div>';
+  document.getElementById('dno').textContent='symptom '+(di+1)+'/'+DEBUG.length;
+  const el=document.getElementById('dacts');el.innerHTML='';
+  [...D.acts].sort(()=>Math.random()-.5).forEach(a=>{
+    const b=document.createElement('button');b.className='act';b.type='button';
+    b.innerHTML='<div class="h">'+a.h+'</div><div class="d">'+a.d+'</div>';
+    b.onclick=()=>pickFix(a,b);el.appendChild(b);});
+  document.getElementById('d2v').style.display='none';
+  document.getElementById('nextD').style.display='none';
+  document.getElementById('impact').innerHTML='<span class="idle">make the call to see what it changes…</span>';
+}
+function pickFix(a,btn){
+  const D=DEBUG[di];
+  document.querySelectorAll('#dacts .act').forEach(x=>x.disabled=true);
+  btn.classList.add(a.ok?'right':'wrongpick');
+  dleds.children[di].classList.add(a.ok?'on':'fail');
+  const v=document.getElementById('d2v');v.style.display='block';
+  v.className='verdict '+(a.ok?'pass':'fail');
+  v.innerHTML=(a.ok?'✓ that is the fix. ':'× that would not have fixed it. ')+D.why;
+  document.getElementById('impact').innerHTML=D.impact.map(p=>
+    '<div class="rowl"><span>'+p[0]+'</span><span class="'+p[2]+'">'+p[1]+'</span></div>').join('');
+  document.getElementById('nextD').style.display=di<DEBUG.length-1?'inline-block':'none';
+}
+document.getElementById('nextD').onclick=()=>{di++;loadD();scrollTo(0,0);};
+document.getElementById('reset2').onclick=()=>{di=0;
+  dleds.querySelectorAll('.led').forEach(l=>l.classList.remove('on','fail'));loadD();};
+loadD();
+</script>
+</body>
+</html>

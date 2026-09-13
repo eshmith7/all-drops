@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>n8n Multi-Agent — Flash Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9F4FB;--card:#FDFEFF;--line:#CFE4F2;--ink:#24425C;--dim:#7C9AB3;
+  --sky:#3E97D1;--sky-deep:#2E7AB0;--ok:#5FAF97;--ok-bg:#E8F5F0;--bad:#E08A8A;--bad-bg:#FBEDED;
+  --mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  display:flex;justify-content:center;padding:22px 14px 44px;min-height:100vh}
+.app{width:100%;max-width:440px}
+header{text-align:center;margin-bottom:14px}
+.hero{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.hero[hidden]{display:none}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--sky);margin-bottom:6px}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.9rem;line-height:1.05}
+h1 .accent{color:var(--sky)}
+.sub{font-size:.85rem;color:var(--dim);margin-top:6px;font-weight:600}
+.orn{color:var(--sky);font-size:.9rem;margin-top:8px;letter-spacing:.5em}
+.dots{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin:14px 0 16px}
+.dots .dot{width:9px;height:9px;border-radius:50%;background:var(--line);transition:all .3s}
+.dots .dot.current{background:var(--sky);transform:scale(1.35)}
+.dots .dot.ok{background:var(--ok)}.dots .dot.again{background:var(--bad)}
+.stage{perspective:1200px;margin-bottom:14px}
+.flip{position:relative;width:100%;height:372px;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,.1,.2,1);cursor:pointer}
+.flip.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 28px rgba(46,108,158,.1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 22px}
+.face.back{transform:rotateY(180deg)}
+.face .cat{font-size:.64rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.face svg{margin-bottom:10px}
+.face .term{font-family:'Fraunces',serif;font-weight:900;font-size:1.72rem;line-height:1.1}
+.face .tease{margin-top:9px;font-size:.97rem;font-weight:700;color:var(--sky-deep);font-style:italic;max-width:26ch;line-height:1.4}
+.face .hint{margin-top:14px;font-size:.74rem;font-weight:700;color:var(--dim)}
+.face .def{font-size:.96rem;line-height:1.6;color:#3D5A73;font-weight:600;max-width:34ch}
+.face .def b{color:var(--sky-deep)}
+.face .code{font-family:var(--mono);font-size:.73rem;background:var(--bg);border-radius:9px;padding:8px 11px;
+  margin-top:11px;color:var(--sky-deep);max-width:100%;overflow-x:auto;line-height:1.5}
+.face .memory{margin-top:12px;font-family:'Permanent Marker',cursive;font-size:.87rem;color:var(--sky);transform:rotate(-2deg)}
+.actions{display:none;grid-template-columns:1fr 1fr;gap:10px}
+.actions button{font-family:'Fraunces',serif;font-weight:900;font-size:.98rem;border:none;border-radius:14px;padding:15px;cursor:pointer}
+.actions .again{background:var(--bad-bg);color:#B96A6A;border:1.5px solid var(--bad)}
+.actions .knew{background:var(--ok);color:#F0FAF7}
+.tapnote{text-align:center;font-size:.74rem;font-weight:700;color:var(--dim);margin-top:4px}
+.done{display:none;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:30px 22px;box-shadow:0 8px 28px rgba(46,108,158,.1)}
+.done .bloom{font-size:2.2rem;margin-bottom:6px}
+.done h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;margin-bottom:4px}
+.done .big{font-family:'Fraunces',serif;font-weight:900;font-size:2.8rem;color:var(--sky);margin:8px 0 2px}
+.done .grade{color:var(--dim);font-size:.92rem;font-weight:700;margin-bottom:16px;line-height:1.5}
+.done .stats{font-size:.8rem;font-weight:600;color:var(--dim);border-top:1.5px dashed var(--line);
+  border-bottom:1.5px dashed var(--line);padding:12px 0;margin-bottom:18px;line-height:1.9}
+.btnrow{display:grid;gap:10px}
+.primary{font-family:'Fraunces',serif;font-weight:900;font-size:1rem;color:#FDFEFF;background:var(--sky);
+  border:none;border-radius:14px;padding:15px;cursor:pointer}
+.primary:hover{background:var(--sky-deep)}
+.ghost{font-weight:800;color:var(--sky);background:none;border:1.5px solid var(--sky);border-radius:14px;padding:14px;cursor:pointer;font-size:.95rem}
+footer{margin-top:18px;text-align:center;font-size:.68rem;font-weight:700;color:#9DBCD4;letter-spacing:.14em;text-transform:uppercase;line-height:1.9}
+footer .fine{font-size:.6rem;letter-spacing:.1em}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(46,108,158,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:#fff;border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.82rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.73rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-sky .in{background:var(--sky);color:#F2FAFF}
+.t-teal .in{background:var(--ok);color:#F0FAF7}
+.t-slate .in{background:var(--ink);color:#E9F4FB}
+.t-white .in{background:#fff;color:var(--sky-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+body,button,.flip,.dot{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Cpath d='M4 20V10M10 20V4M16 20v-7M22 20H2' stroke='%233E97D1' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") 4 4, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--sky);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.flip{transition:none}.sticker .in{animation:none}}
+</style></head><body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🔌</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🧠</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🧰</span></div>
+<div class="sticker st-t sm t-sky"  style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">one job per node</span></div>
+<div class="sticker st-t sm t-teal" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">dotted = sub-node</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">🤖</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">✉️</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚠️</span></div>
+<div class="sticker st-t sm t-white" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">12 nodes</span></div>
+<div class="sticker st-t sm t-slate st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">3 agents → 1 report</span></div>
+
+<div class="app">
+  <header>
+    <img class="hero" id="hero" alt="" hidden>
+    <div class="eyebrow">Daily Drop · Flash Cards</div>
+    <h1>Twelve ideas that make<br><span class="accent">n8n agents click.</span></h1>
+    <div class="sub">12 cards · tap to flip · be honest with yourself</div>
+    <div class="orn">✦ ✦ ✦</div>
+  </header>
+  <div class="dots" id="dots"></div>
+  <div class="stage">
+    <div class="flip" id="flip" role="button" tabindex="0">
+      <div class="face front">
+        <div class="cat" id="fcat"></div><div id="fart"></div>
+        <div class="term" id="fterm"></div><div class="tease" id="ftease"></div>
+        <div class="hint">tap to flip ↻</div>
+      </div>
+      <div class="face back">
+        <div class="cat" id="bcat"></div><div class="def" id="bdef"></div>
+        <div class="code" id="bcode"></div><div class="memory" id="bmem"></div>
+      </div>
+    </div>
+  </div>
+  <div class="actions" id="actions">
+    <button class="again" id="btnAgain">Still learning</button>
+    <button class="knew" id="btnKnew">Knew it ✓</button>
+  </div>
+  <div class="tapnote" id="tapnote">flip the card first, then rate yourself</div>
+  <div class="done" id="done">
+    <div class="bloom">🔌</div>
+    <h2>Deck complete!</h2>
+    <div class="big" id="finalScore"></div>
+    <div class="grade" id="grade"></div>
+    <div class="stats" id="stats"></div>
+    <div class="btnrow">
+      <button class="primary" id="reviewBtn" style="display:none">Review the ones I missed</button>
+      <button class="primary" id="share">Copy my result</button>
+      <button class="ghost" id="restart">Restart full deck</button>
+    </div>
+  </div>
+  <footer>nodes · ports · sub-nodes · agent as tool<br><span class="fine">drop by Eshmith Saideep · educational build, not financial advice</span></footer>
+</div>
+<script>
+/* ===== paste your generated image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ============================================================ */
+if(HERO_IMAGE){const h=document.getElementById("hero");h.src=HERO_IMAGE;h.hidden=false;}
+
+const S={sky:'#3E97D1',deep:'#2E7AB0',ink:'#24425C',line:'#CFE4F2',bg:'#E9F4FB',ok:'#5FAF97',dim:'#7C9AB3',bad:'#E08A8A'};
+const IC={
+ node:`<svg width="150" height="50" viewBox="0 0 150 50"><path d="M6 25h26M118 25h26" stroke="${S.line}" stroke-width="3" stroke-linecap="round"/><rect x="34" y="8" width="82" height="34" rx="10" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><text x="75" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${S.ink}">one job</text><circle cx="34" cy="25" r="4" fill="${S.sky}"/><circle cx="116" cy="25" r="4" fill="${S.sky}"/></svg>`,
+ bolt:`<svg width="140" height="50" viewBox="0 0 140 50"><path d="M31 8h55a10 10 0 0110 10v14a10 10 0 01-10 10H31a17 17 0 010-34z" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><path d="M55 13l-13 15h9l-3 10 13-15h-9z" fill="${S.sky}"/><path d="M98 25h20" stroke="${S.line}" stroke-width="3" stroke-linecap="round"/><path d="M124 25l-9-5v10z" fill="${S.line}"/></svg>`,
+ json:`<svg width="150" height="52" viewBox="0 0 150 52"><rect x="6" y="6" width="138" height="40" rx="9" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><text x="18" y="24" font-family="JetBrains Mono" font-size="9" fill="${S.ink}">{ "chatInput":</text><text x="30" y="38" font-family="JetBrains Mono" font-size="9" fill="${S.dim}">"Analyze Infosys" }</text></svg>`,
+ expr:`<svg width="150" height="48" viewBox="0 0 150 48"><rect x="5" y="11" width="140" height="26" rx="8" fill="${S.bg}" stroke="${S.line}" stroke-width="1.8"/><text x="75" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="${S.deep}">{{ $json.output }}</text></svg>`,
+ agent:`<svg width="150" height="56" viewBox="0 0 150 56"><path d="M6 20h28M116 20h28" stroke="${S.line}" stroke-width="3" stroke-linecap="round"/><rect x="36" y="4" width="78" height="32" rx="9" fill="${S.sky}"/><text x="75" y="25" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#fff">Agent</text>${[50,75,100].map(x=>`<path d="M${x} 36v8" stroke="${S.sky}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="${x}" cy="49" r="5" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/>`).join('')}</svg>`,
+ brain:`<svg width="120" height="54" viewBox="0 0 120 54"><rect x="34" y="5" width="52" height="34" rx="16" fill="${S.bg}" stroke="${S.sky}" stroke-width="2.4"/><path d="M60 5v34" stroke="${S.line}" stroke-width="2"/><path d="M47 13c6 3 6 9 0 12M73 19c-6 3-6 9 0 12" fill="none" stroke="${S.sky}" stroke-width="2" stroke-linecap="round"/><path d="M60 39v7" stroke="${S.sky}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="60" cy="49" r="4" fill="${S.sky}"/></svg>`,
+ notebook:`<svg width="130" height="52" viewBox="0 0 130 52"><rect x="36" y="4" width="58" height="42" rx="7" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><path d="M50 4v42" stroke="${S.line}" stroke-width="2"/>${[0,1,2].map(i=>`<rect x="58" y="${13+i*10}" width="${28-i*7}" height="4.5" rx="2.2" fill="${i===0?S.sky:S.line}"/>`).join('')}<path d="M65 46v5" stroke="${S.sky}" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
+ wrench:`<svg width="120" height="52" viewBox="0 0 120 52"><path d="M32 44l26-26" stroke="${S.sky}" stroke-width="8" stroke-linecap="round"/><path d="M74 6a16 16 0 00-15 21l-5 5 11 11 5-5a16 16 0 0021-15l-11 6-12-12 6-11z" fill="${S.sky}"/><circle cx="32" cy="44" r="5" fill="${S.deep}"/></svg>`,
+ team:`<svg width="150" height="56" viewBox="0 0 150 56"><rect x="50" y="2" width="50" height="20" rx="7" fill="${S.sky}"/><text x="75" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#fff">manager</text><path d="M75 22v8M40 30h70M40 30v6M110 30v6" fill="none" stroke="${S.line}" stroke-width="2.4"/><rect x="14" y="36" width="52" height="17" rx="6" fill="${S.deep}"/><rect x="84" y="36" width="52" height="17" rx="6" fill="${S.deep}"/><text x="40" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#fff">fundamental</text><text x="110" y="48" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#fff">technical</text></svg>`,
+ plug:`<svg width="146" height="50" viewBox="0 0 146 50"><rect x="4" y="11" width="46" height="28" rx="8" fill="${S.sky}"/><text x="27" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#fff">agent</text><path d="M50 19h14M50 31h14" stroke="${S.deep}" stroke-width="4" stroke-linecap="round"/><rect x="64" y="7" width="15" height="36" rx="5" fill="${S.deep}"/><rect x="79" y="11" width="63" height="28" rx="8" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><text x="110" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="${S.ink}">tool port</text></svg>`,
+ tag:`<svg width="150" height="52" viewBox="0 0 150 52"><path d="M12 4h126a8 8 0 018 8v20a8 8 0 01-8 8H46l-15 10V40H12a8 8 0 01-8-8V12a8 8 0 018-8z" fill="${S.bg}" stroke="${S.sky}" stroke-width="2"/><text x="16" y="20" font-family="JetBrains Mono" font-size="8" fill="${S.ink}">"Use for WHEN to buy</text><text x="16" y="33" font-family="JetBrains Mono" font-size="8" fill="${S.dim}">— trend, support, RSI."</text></svg>`,
+ wire:`<svg width="150" height="56" viewBox="0 0 150 56"><rect x="6" y="5" width="42" height="19" rx="6" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><text x="27" y="18" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="${S.dim}">main</text><path d="M48 15h28" stroke="${S.dim}" stroke-width="3" stroke-linecap="round"/><path d="M82 15l-9-5v10z" fill="${S.dim}"/><rect x="84" y="5" width="42" height="19" rx="6" fill="${S.sky}"/><text x="105" y="18" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#fff">agent</text><path d="M105 24v16" stroke="${S.sky}" stroke-width="2.4" stroke-dasharray="4 4"/><rect x="82" y="40" width="46" height="14" rx="5" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><text x="105" y="50" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="${S.sky}">sub-node</text></svg>`
+};
+const DECK=[
+ {cat:"n8n basics",ic:'node',term:"Node",tease:"One step that does one job",
+  def:"A <b>node</b> takes data in, does its one job, passes data on. You read a workflow left to right, node by node.",
+  code:"Chat Trigger → Agent → Code → Gmail",mem:"one box, one job"},
+ {cat:"n8n basics",ic:'bolt',term:"Trigger",tease:"Nothing moves until this fires",
+  def:"The one node that starts a workflow. Ours is <b>When chat message received</b>. No trigger, nothing runs — however good the rest of the canvas looks.",
+  code:"When chat message received",mem:"no spark, no run"},
+ {cat:"n8n basics",ic:'json',term:"Item",tease:"Data travels as a list",
+  def:"Data moves between nodes as a list of <b>items</b>, each one a JSON object. A node runs once per item — two items in, the node fires twice.",
+  code:'{ "chatInput": "Analyze Infosys" }',mem:"a list of little JSONs"},
+ {cat:"n8n basics",ic:'expr',term:"Expression",tease:"How a node reads the last one",
+  def:"Double braces that <b>pull a field off the incoming item</b>. {{ $json.output }} is the agent's answer; {{ $json.chatInput }} is the question that arrived.",
+  code:"{{ $json.output }}",mem:"braces borrow a field"},
+ {cat:"the agent node",ic:'agent',term:"AI Agent node",tease:"The node with ports underneath",
+  def:"Input on the left, output on the right, <b>plus a row of ports underneath</b>. Those bottom ports are where sub-nodes attach — brain, memory, tools.",
+  code:"sides = data · bottom = sub-nodes",mem:"sides for data, bottom for brains"},
+ {cat:"the agent node",ic:'brain',term:"Chat Model port",tease:"The brain slot. Required.",
+  def:"The agent's brain — here OpenAI Chat Model on gpt-4o-mini. It is the one required port: <b>leave the slot empty and the agent cannot run at all</b>.",
+  code:"Chat Model port → OpenAI Chat Model",mem:"empty brain slot, instant error"},
+ {cat:"the agent node",ic:'notebook',term:"Memory",tease:"Optional — until the follow-up",
+  def:"An optional sub-node. Attach <b>Simple Memory</b> and a follow-up like \"and its technical view?\" still makes sense. Leave it off and every message arrives from a stranger.",
+  code:"Memory → Simple Memory (window buffer)",mem:"without it, every message is message one"},
+ {cat:"the agent node",ic:'wrench',term:"Tool port",tease:"Zero, one, or many",
+  def:"Anything on this port is something the agent <b>may choose to call</b> — SerpAPI for live search, an HTTP Request, or another agent entirely.",
+  code:"SerpAPI · HTTP Request · another agent",mem:"the agent's optional hands"},
+ {cat:"the team",ic:'team',term:"Orchestrator",tease:"Delegates the work, never does it",
+  def:"The manager agent. It calls the Fundamental specialist (WHAT to buy) and the Technical one (WHEN), then merges both replies — it <b>never researches anything itself</b>.",
+  code:"manager → 2 specialists → 1 report",mem:"the manager, not the analyst"},
+ {cat:"the team",ic:'plug',term:"Agent-as-tool",tease:"A colleague becomes a function call",
+  def:"Attach an agent to another agent's Tool port and it stops being a chat partner: it becomes a <b>callable function</b> — one instruction in, one structured reply out.",
+  code:"Tool port ▸ Technical Analysis Agent",mem:"plugged in, not chatted with"},
+ {cat:"the team",ic:'tag',term:"Tool description",tease:"The sentence that decides everything",
+  def:"The line the orchestrator reads to decide <b>when</b> to call a tool. Vague description, never called — that is the number-one reason a specialist sits idle.",
+  code:'"Use for WHEN to buy — trend, RSI."',mem:"vague description, silent specialist"},
+ {cat:"reading the canvas",ic:'wire',term:"Sub-node connection",tease:"Dotted and downward, not solid across",
+  def:"Sub-nodes hang <b>below</b> an agent on dotted connections; the main line runs left to right on solid ones. Telling those apart is the real sign you understand n8n.",
+  code:"solid → next step · dotted ↓ capability",mem:"down and dotted = a capability"}
+];
+const GRADES=[
+ {min:11,label:"You could wire this agent team from memory 🔌"},
+ {min:8,label:"Almost there — one review round will do it."},
+ {min:5,label:"Halfway 🌱 Run the review and these will stick."},
+ {min:0,label:"First pass done. Repetition is the whole point — run the review."}
+];
+
+const dots=document.getElementById('dots'),flip=document.getElementById('flip');
+const actions=document.getElementById('actions'),tapnote=document.getElementById('tapnote'),doneEl=document.getElementById('done');
+let order=DECK.map((_,k)=>k),pos=0,known={},isReview=false;
+function buildDots(){dots.innerHTML='';order.forEach(()=>dots.insertAdjacentHTML('beforeend','<div class="dot"></div>'));}
+function render(){
+  const c=DECK[order[pos]];
+  document.querySelectorAll('.dots .dot').forEach((d,k)=>{const idx=order[k];
+    d.className='dot'+(k===pos?' current':known[idx]===true?' ok':known[idx]===false?' again':'');});
+  flip.classList.remove('flipped');
+  fcat.textContent=c.cat;fart.innerHTML=IC[c.ic]||'';fterm.textContent=c.term;ftease.textContent=c.tease;
+  bcat.textContent=c.term;bdef.innerHTML=c.def;
+  bcode.textContent=c.code||'';bcode.style.display=c.code?'block':'none';
+  bmem.textContent='“'+c.mem+'”';
+  actions.style.display='none';tapnote.style.display='block';
+}
+function doFlip(){if(doneEl.style.display==='block')return;flip.classList.toggle('flipped');
+  if(flip.classList.contains('flipped')){actions.style.display='grid';tapnote.style.display='none';}}
+flip.addEventListener('click',doFlip);
+flip.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();doFlip();}});
+function rate(k){known[order[pos]]=k;
+  document.querySelectorAll('.dots .dot')[pos].className='dot '+(k?'ok':'again');
+  pos++;pos<order.length?setTimeout(render,180):showDone();}
+btnKnew.addEventListener('click',()=>rate(true));
+btnAgain.addEventListener('click',()=>rate(false));
+function showDone(){
+  const total=order.length,got=order.filter(i=>known[i]).length,missed=order.filter(i=>!known[i]);
+  flip.parentElement.style.display='none';actions.style.display='none';tapnote.style.display='none';
+  doneEl.style.display='block';finalScore.textContent=`${got}/${total}`;
+  grade.textContent=(isReview&&!missed.length)?"Review round cleared ⚡ Every card locked in."
+    :GRADES.find(g=>got>=g.min*total/12).label;
+  stats.innerHTML=missed.length?'still learning: '+missed.map(i=>DECK[i].term).join(' · '):'every card marked known ✦';
+  reviewBtn.style.display=missed.length?'block':'none';
+  reviewBtn.onclick=()=>{order=missed.slice();order.forEach(i=>delete known[i]);pos=0;isReview=true;
+    doneEl.style.display='none';flip.parentElement.style.display='block';buildDots();render();};
+  share.onclick=function(){
+    const t=`n8n Multi-Agent Flash Cards — ${got}/${total} known\n${order.map(i=>known[i]?'🟢':'🟠').join('')}`;
+    navigator.clipboard.writeText(t).then(()=>{this.textContent='Copied ✓';
+      setTimeout(()=>this.textContent='Copy my result',1600);}).catch(()=>{this.textContent=t;});};
+  restart.onclick=()=>{order=DECK.map((_,k)=>k);known={};pos=0;isReview=false;
+    doneEl.style.display='none';flip.parentElement.style.display='block';buildDots();render();};
+}
+buildDots();render();
+(function(){const G=['→','↓','{}','⚡','⇄','●'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script></body></html>

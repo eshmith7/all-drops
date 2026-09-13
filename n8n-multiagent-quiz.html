@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Automation in n8n — Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--ok:#7FA37A;--ok-bg:#EEF3EA;--bad:#C97B7B;--bad-bg:#F7EAEA;
+  --mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  display:flex;justify-content:center;padding:22px 14px 44px;min-height:100vh}
+.app{width:100%;max-width:480px}
+header{text-align:center;margin-bottom:16px}
+.hero{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.hero[hidden]{display:none}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay);margin-bottom:6px}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.95rem;line-height:1.05}
+h1 .accent{color:var(--clay)}
+.sub{font-size:.85rem;color:var(--dim);margin-top:6px;font-weight:600}
+.orn{color:var(--clay);font-size:.9rem;margin-top:8px;letter-spacing:.5em}
+.dots{display:flex;justify-content:center;gap:8px;margin:16px 0 18px}
+.dots .dot{width:10px;height:10px;border-radius:50%;background:var(--line);transition:all .3s}
+.dots .dot.current{background:var(--clay);transform:scale(1.35)}
+.dots .dot.ok{background:var(--ok)}.dots .dot.bad{background:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 20px;box-shadow:0 6px 24px rgba(122,90,64,.08)}
+.qmeta{display:flex;justify-content:space-between;font-size:.68rem;font-weight:800;color:var(--dim);letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px}
+.art{display:block;margin:0 auto 12px;max-width:100%;height:auto}
+.qtext{font-family:'Fraunces',serif;font-weight:700;font-size:1.18rem;line-height:1.36;min-height:74px;margin-bottom:13px}
+.qtext .caret{display:inline-block;width:3px;height:1em;background:var(--clay);vertical-align:-2px;animation:blink 1s steps(1) infinite;margin-left:2px;border-radius:2px}
+@keyframes blink{50%{opacity:.1}}
+.opts{display:grid;gap:10px}
+.opt{text-align:left;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);
+  border-radius:14px;padding:14px 15px;cursor:pointer;line-height:1.45;font-size:.92rem;font-weight:600;
+  transition:all .15s;display:flex;gap:11px;align-items:flex-start}
+.opt:hover{border-color:var(--clay);background:#FBF3E7}
+.opt .key{font-size:.72rem;font-weight:800;color:var(--clay);background:#F2E4D4;border-radius:7px;padding:2px 7px;margin-top:2px;flex-shrink:0}
+.opt.correct{background:var(--ok-bg);border-color:var(--ok)}.opt.correct .key{color:#fff;background:var(--ok)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}.opt.wrong .key{color:#fff;background:var(--bad)}
+.opt:disabled{cursor:default}.opt:disabled:not(.correct):not(.wrong){opacity:.45}
+.explain{margin-top:14px;border-left:3px solid var(--clay);background:#FBF3E7;border-radius:0 12px 12px 0;
+  padding:13px 15px;font-size:.87rem;line-height:1.55;color:#6B5647;display:none}
+.explain b{color:var(--clay-deep)}
+.explain code{font-family:var(--mono);font-size:.82em;background:#F2E4D4;border-radius:5px;padding:1px 5px}
+.next{margin-top:16px;width:100%;font-family:'Fraunces',serif;font-weight:900;font-size:1.02rem;color:#FFFBF3;
+  background:var(--clay);border:none;border-radius:14px;padding:15px;cursor:pointer;display:none}
+.next:hover{background:var(--clay-deep)}
+.score{text-align:center;display:none}
+.score .bloom{font-size:2.2rem;margin-bottom:4px}
+.score h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;margin-bottom:4px}
+.score .big{font-family:'Fraunces',serif;font-weight:900;font-size:3rem;color:var(--clay);margin:8px 0 2px}
+.score .grade{color:var(--dim);font-size:.92rem;font-weight:700;margin-bottom:18px;line-height:1.5}
+.score .stats{font-size:.8rem;font-weight:600;color:var(--dim);border-top:1.5px dashed var(--line);
+  border-bottom:1.5px dashed var(--line);padding:12px 0;margin-bottom:18px;line-height:1.9}
+.btnrow{display:grid;gap:10px}
+.ghost{font-weight:800;color:var(--clay);background:none;border:1.5px solid var(--clay);border-radius:14px;padding:14px;cursor:pointer;font-size:.95rem}
+footer{margin-top:18px;text-align:center;font-size:.68rem;font-weight:700;color:#BCA893;letter-spacing:.14em;text-transform:uppercase}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(122,90,64,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:var(--card);border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.82rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.73rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-clay .in{background:var(--clay);color:#FFF6E9}
+.t-sage .in{background:var(--ok);color:#F4F8F1}
+.t-ink .in{background:var(--ink);color:#F7EFE2}
+.t-cream .in{background:var(--card);color:var(--clay-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+body,button,.opt,.dot{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Cpath d='M4 20V10M10 20V4M16 20v-7M22 20H2' stroke='%23B4785B' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E") 4 4, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--clay);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.sticker .in,.qtext .caret{animation:none}}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🔌</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🧩</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🧠</span></div>
+<div class="sticker st-t sm t-clay" style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">node · port · wire</span></div>
+<div class="sticker st-t sm t-sage" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">one trigger only</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">🔎</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">✉️</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚠️</span></div>
+<div class="sticker st-t sm t-cream" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">dotted = sub-node</span></div>
+<div class="sticker st-t sm t-ink st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">describe your tools</span></div>
+
+<div class="app">
+  <header>
+    <img class="hero" id="hero" alt="" hidden>
+    <div class="eyebrow">Daily Drop · Quiz</div>
+    <h1>Ten questions on<br><span class="accent">agents in n8n.</span></h1>
+    <div class="sub">10 questions · nodes, ports and wiring</div>
+    <div class="orn">❀ ❀ ❀</div>
+  </header>
+  <div class="dots" id="dots"></div>
+  <main class="card" id="card">
+    <div class="qmeta"><span id="qnum">Question 1 of 10</span><span id="qtopic"></span></div>
+    <div id="artbox"></div>
+    <p class="qtext" id="qtext" aria-live="polite"></p>
+    <div class="opts" id="opts"></div>
+    <div class="explain" id="explain"></div>
+    <button class="next" id="next">Next question</button>
+    <div class="score" id="score">
+      <div class="bloom">🔌</div>
+      <h2>All done!</h2>
+      <div class="big" id="finalScore">0/10</div>
+      <div class="grade" id="grade"></div>
+      <div class="stats" id="stats"></div>
+      <div class="btnrow">
+        <button class="next" id="share" style="display:block">Copy my result</button>
+        <button class="ghost" id="retry">Take it again</button>
+      </div>
+    </div>
+  </main>
+  <footer>node · port · wire · agent · Eshmith Saideep</footer>
+</div>
+<script>
+/* ===== paste your generated image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ============================================================ */
+if(HERO_IMAGE){const h=document.getElementById("hero");h.src=HERO_IMAGE;h.hidden=false;}
+const C={clay:'#B4785B',ink:'#4A3830',line:'#E7D8C4',cream:'#FFFBF3',sage:'#7FA37A',dim:'#A08B79',bad:'#C97B7B'};
+const ART={
+ wire:`<svg class="art" width="300" height="90" viewBox="0 0 300 90">
+  <rect x="6" y="26" width="104" height="42" rx="11" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="58" y="46" text-anchor="middle" font-family="Nunito" font-size="10" font-weight="800" fill="${C.ink}">Orchestrator</text>
+  <text x="58" y="59" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="700" fill="${C.dim}">Agent</text>
+  <rect x="190" y="26" width="104" height="42" rx="11" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="242" y="46" text-anchor="middle" font-family="Nunito" font-size="10" font-weight="800" fill="${C.ink}">Code in</text>
+  <text x="242" y="59" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="700" fill="${C.dim}">JavaScript</text>
+  <path d="M110 47h80" stroke="${C.clay}" stroke-width="2.6"/>
+  <path d="M190 47l-9-5v10z" fill="${C.clay}"/>
+  <rect x="120" y="4" width="60" height="20" rx="6" fill="${C.clay}"/>
+  <text x="150" y="18" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${C.cream}">items</text>
+  <path d="M150 24v16" stroke="${C.clay}" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <text x="150" y="84" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">the wire hands over the data</text>
+ </svg>`,
+ trigger:`<svg class="art" width="300" height="84" viewBox="0 0 300 84">
+  <rect x="4" y="22" width="86" height="36" rx="10" fill="none" stroke="${C.bad}" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="47" y="45" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.bad}">no trigger</text>
+  <path d="M90 40h20" stroke="${C.line}" stroke-width="2.6"/>
+  <rect x="110" y="22" width="88" height="36" rx="10" fill="${C.cream}" stroke="${C.line}" stroke-width="2"/>
+  <text x="154" y="45" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="700" fill="${C.dim}">Orchestrator</text>
+  <path d="M198 40h20" stroke="${C.line}" stroke-width="2.6"/>
+  <rect x="218" y="22" width="78" height="36" rx="10" fill="${C.cream}" stroke="${C.line}" stroke-width="2"/>
+  <text x="257" y="45" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="700" fill="${C.dim}">Gmail</text>
+  <text x="150" y="76" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.bad}">nothing starts · nothing runs</text>
+ </svg>`,
+ ports:`<svg class="art" width="300" height="116" viewBox="0 0 300 116">
+  <rect x="84" y="4" width="132" height="40" rx="11" fill="${C.clay}"/>
+  <text x="150" y="29" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="${C.cream}">Orchestrator Agent</text>
+  <path d="M74 24h10M216 24h10" stroke="${C.clay}" stroke-width="2.6"/>
+  <path d="M110 44V54H50V64" fill="none" stroke="${C.clay}" stroke-width="2" stroke-dasharray="4 4"/>
+  <path d="M150 44V64" fill="none" stroke="${C.line}" stroke-width="2" stroke-dasharray="4 4"/>
+  <path d="M190 44V54H250V64" fill="none" stroke="${C.line}" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect x="4" y="64" width="92" height="36" rx="9" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="50" y="80" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.ink}">Chat Model</text>
+  <text x="50" y="93" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.clay}">required</text>
+  <rect x="104" y="64" width="92" height="36" rx="9" fill="${C.cream}" stroke="${C.line}" stroke-width="2"/>
+  <text x="150" y="80" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.ink}">Memory</text>
+  <text x="150" y="93" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="700" fill="${C.dim}">optional</text>
+  <rect x="204" y="64" width="92" height="36" rx="9" fill="${C.cream}" stroke="${C.line}" stroke-width="2"/>
+  <text x="250" y="80" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.ink}">Tool</text>
+  <text x="250" y="93" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="700" fill="${C.dim}">none or many</text>
+  <text x="150" y="112" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">the ports underneath take sub-nodes</text>
+ </svg>`,
+ wires:`<svg class="art" width="300" height="100" viewBox="0 0 300 100">
+  <rect x="0" y="0" width="146" height="100" rx="8" fill="#EEF3EA" stroke="${C.sage}" stroke-width="1.6"/>
+  <text x="10" y="15" font-family="Nunito" font-size="9" font-weight="800" fill="${C.sage}">main line</text>
+  <rect x="10" y="34" width="50" height="26" rx="8" fill="${C.cream}" stroke="${C.sage}" stroke-width="2"/>
+  <rect x="86" y="34" width="50" height="26" rx="8" fill="${C.cream}" stroke="${C.sage}" stroke-width="2"/>
+  <path d="M60 47h26" stroke="${C.sage}" stroke-width="2.6"/>
+  <path d="M86 47l-8-4.5v9z" fill="${C.sage}"/>
+  <text x="73" y="80" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="${C.ink}">solid · left to right</text>
+  <text x="73" y="92" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="700" fill="${C.dim}">data flows here</text>
+  <rect x="154" y="0" width="146" height="100" rx="8" fill="#FBF3E7" stroke="${C.clay}" stroke-width="1.6"/>
+  <text x="164" y="15" font-family="Nunito" font-size="9" font-weight="800" fill="${C.clay}">sub-node</text>
+  <rect x="200" y="22" width="54" height="24" rx="8" fill="${C.clay}"/>
+  <rect x="200" y="58" width="54" height="22" rx="7" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <path d="M227 46v12" stroke="${C.clay}" stroke-width="2.4" stroke-dasharray="4 4"/>
+  <text x="227" y="92" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="${C.ink}">dotted · downward</text>
+ </svg>`,
+ team:`<svg class="art" width="300" height="112" viewBox="0 0 300 112">
+  <rect x="86" y="4" width="128" height="36" rx="10" fill="${C.clay}"/>
+  <text x="150" y="27" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="${C.cream}">Orchestrator Agent</text>
+  <path d="M150 40V52H50V64" fill="none" stroke="${C.clay}" stroke-width="2" stroke-dasharray="4 4"/>
+  <path d="M150 40V52H250V64" fill="none" stroke="${C.clay}" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="150" y="61" text-anchor="middle" font-family="Nunito" font-size="8" font-weight="800" fill="${C.clay}">TOOL PORT</text>
+  <rect x="4" y="64" width="92" height="38" rx="10" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="50" y="81" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.ink}">Fundamental</text>
+  <text x="50" y="94" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="700" fill="${C.dim}">Analysis Agent</text>
+  <rect x="204" y="64" width="92" height="38" rx="10" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="250" y="81" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.ink}">Technical</text>
+  <text x="250" y="94" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="700" fill="${C.dim}">Analysis Agent</text>
+  <path d="M100 83h96" stroke="${C.line}" stroke-width="1.6" stroke-dasharray="3 4"/>
+  <path d="M143 78l14 10M157 78l-14 10" stroke="${C.bad}" stroke-width="1.8"/>
+  <text x="150" y="110" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">the specialists never talk to each other</text>
+ </svg>`,
+ inbox:`<svg class="art" width="300" height="98" viewBox="0 0 300 98">
+  <rect x="4" y="4" width="292" height="88" rx="10" fill="${C.cream}" stroke="${C.line}" stroke-width="2"/>
+  <path d="M4 30h292" stroke="${C.line}" stroke-width="1.6"/>
+  <text x="16" y="22" font-family="Nunito" font-size="9.5" font-weight="800" fill="${C.dim}">Infosys — analysis report</text>
+  <text x="16" y="48" font-family="JetBrains Mono" font-size="10" fill="${C.bad}">&lt;h2&gt;Fundamental Insights&lt;/h2&gt;</text>
+  <text x="16" y="64" font-family="JetBrains Mono" font-size="10" fill="${C.bad}">&lt;ul&gt;&lt;li&gt;Steady deal wins</text>
+  <rect x="16" y="72" width="120" height="15" rx="5" fill="#F7EAEA" stroke="${C.bad}" stroke-width="1.2"/>
+  <text x="76" y="83" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.bad}">Message Type: Text</text>
+ </svg>`,
+ item:`<svg class="art" width="300" height="96" viewBox="0 0 300 96">
+  <rect x="24" y="4" width="252" height="66" rx="10" fill="${C.cream}" stroke="${C.clay}" stroke-width="2"/>
+  <text x="40" y="26" font-family="JetBrains Mono" font-size="11" fill="${C.ink}">return [ { json: {</text>
+  <text x="58" y="44" font-family="JetBrains Mono" font-size="11" fill="${C.clay}">html: "&lt;h2&gt;Infosys…"</text>
+  <text x="40" y="62" font-family="JetBrains Mono" font-size="11" fill="${C.ink}">} } ]</text>
+  <text x="150" y="88" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">one item · the shape every node expects</text>
+ </svg>`
+};
+const QUESTIONS=[
+ {topic:"n8n basics",art:'wire',q:"A connection between two n8n nodes carries what, exactly?",
+  opts:["Only a 'now run the next node' signal — each node fetches its own data",
+        "The data itself, handed over as a list of items",
+        "The electricity that powers the node",
+        "A copy of the workflow's system prompt"],a:1,
+  ex:"A <b>connection is a pipe, not a starting pistol</b>. Whatever the node on the left returns travels down the wire as items, and the node on the right runs once per item. That is why you read an n8n canvas left to right."},
+
+ {topic:"n8n basics",art:'trigger',q:"You send a chat message and the workflow does absolutely nothing. Most likely reason?",
+  opts:["The OpenAI Chat Model is set to gpt-4o-mini instead of something bigger",
+        "The Gmail node is missing a subject line",
+        "The canvas is zoomed out too far for n8n to run it",
+        "There is no trigger node — or the workflow was never activated"],a:3,
+  ex:"Every workflow needs exactly one <b>trigger</b>, here <i>When chat message received</i>. No trigger, or a workflow left inactive, means nothing is listening: your message arrives and n8n never opens an execution at all."},
+
+ {topic:"the agent node",art:'ports',q:"An AI Agent node has a row of ports underneath it. Which one is required?",
+  opts:["Memory","Chat Model","Tool","Wi-Fi"],a:1,
+  ex:"The <b>Chat Model port</b> is the agent's brain, and it is the one port that cannot stay empty. Attach the OpenAI Chat Model and the Orchestrator runs; leave it off and the node errors the moment you hit Test workflow. Memory and Tool are both optional."},
+
+ {topic:"the agent node",q:"You attach Simple Memory to the Orchestrator Agent. What changes for the person chatting?",
+  opts:["The agent's answers get noticeably longer",
+        "The agent can now search the live web",
+        "Follow-up questions keep their context",
+        "Every past chat is emailed to you each morning"],a:2,
+  ex:"<b>Simple Memory</b> is a window buffer of the recent turns in the same chat. With it, \"Analyze Infosys\" followed by \"and its technical view?\" still means Infosys. Without it, every message arrives from a stranger."},
+
+ {topic:"the agent node",art:'wires',q:"On an n8n canvas, how do sub-node connections look compared to the main line?",
+  opts:["Drawn downward and dotted, while the main line runs left to right and solid",
+        "Identical — n8n draws every connection exactly the same way",
+        "Drawn upward and solid, while the main line is the dotted one",
+        "Invisible until you press Test workflow"],a:0,
+  ex:"<b>Dotted and downward means a sub-node</b> — a chat model, a memory, a tool hanging off an agent's bottom ports. Solid and left to right is the main line, where data actually moves. Telling those two apart is the clearest sign someone really reads n8n."},
+
+ {topic:"the team",art:'team',q:"How do you actually build a multi-agent system inside n8n?",
+  opts:["Wire one agent's main output into the next agent's main input",
+        "Write all three agents inside one Code in JavaScript node",
+        "Attach one agent to another agent's Tool port",
+        "Open three separate workflows and run them at the same time"],a:2,
+  ex:"<b>Agent-as-tool</b> is the whole mechanism: the Fundamental and Technical Analysis Agents hang off the Orchestrator's Tool port. The parent then treats each one as a callable function — one instruction out, a structured answer back — not as a chat partner."},
+
+ {topic:"the team",q:"The Orchestrator keeps answering without ever calling the Technical Analysis Agent. Most likely cause?",
+  opts:["The Technical Analysis Agent needs its own Memory sub-node",
+        "Its tool description is too vague to tell the Orchestrator when to use it",
+        "Two tools is one more than a Tool port accepts",
+        "gpt-4o-mini is only allowed to call a single tool per run"],a:1,
+  ex:"An orchestrator picks tools by <b>reading their descriptions</b> and nothing else. \"Technical stuff\" gets skipped; \"use for trend direction, support and resistance levels, RSI, MACD and EMA readings on a given stock\" gets called. A vague description is the number-one reason a specialist sits idle."},
+
+ {topic:"the team",q:"Why split the work across two specialists instead of one big prompt?",
+  opts:["Two agents make the underlying model smarter than one",
+        "Two agents always cost less per token than one",
+        "n8n refuses to run a system prompt longer than 200 words",
+        "Each agent gets one short, sharp job description, the manager calls both in the same turn, and two independent views cross-check each other"],a:3,
+  ex:"Same model, same tokens — what changes is the <b>job description</b>. Short focused prompts hold their depth, the Orchestrator calls both specialists in one reasoning turn instead of working through topics one at a time, and you can upgrade one agent without touching the other."},
+
+ {topic:"the last mile",art:'inbox',q:"Your emailed report arrives with its HTML tags showing as plain text. What did you miss?",
+  opts:["The Gmail node's Message Type is still Text instead of HTML",
+        "The Code in JavaScript node needs to run a second time",
+        "The Orchestrator's system prompt has to ask for HTML",
+        "The Gmail credential was saved with the wrong account"],a:0,
+  ex:"Gmail sends exactly what you tell it to send. With <b>Message Type left on Text</b>, your styled report is delivered as characters — &lt;h2&gt; and all. Switch it to HTML and the same body renders as headings, bullets and a highlighted summary box."},
+
+ {topic:"the last mile",art:'item',q:"Your Code in JavaScript node finishes with no error, but Gmail receives nothing. Most likely?",
+  opts:["The Gmail node needs to sit closer to it on the canvas",
+        "It never returned items in the [{ json: {...} }] shape",
+        "The Chat Trigger allows only one node after it",
+        "The execution was not saved to the log"],a:1,
+  ex:"A Code node that builds a beautiful string and never returns it still succeeds — with <b>zero items</b>. A node handed no items simply does not run, so Gmail stays silent. End with <code>return [{ json: { html } }]</code> and Gmail can pick it up with <code>{{ $json.html }}</code>."}
+];
+const GRADES=[
+ {min:9,label:"You could wire this workflow from memory 🔌"},
+ {min:7,label:"Close — a port or two still to plug in."},
+ {min:4,label:"Good start 🌱 Replay today's drop and rebuild the canvas."},
+ {min:0,label:"All of this is covered in the session — come back after."}
+];
+const dots=document.getElementById('dots'),qnum=document.getElementById('qnum'),qtopic=document.getElementById('qtopic');
+const qtext=document.getElementById('qtext'),optsEl=document.getElementById('opts'),artbox=document.getElementById('artbox');
+const explainEl=document.getElementById('explain'),nextBtn=document.getElementById('next'),scoreEl=document.getElementById('score');
+const KEYS=['A','B','C','D'];let i=0,correct=0,results=[],qStart=0,typer=null;
+QUESTIONS.forEach(()=>dots.insertAdjacentHTML('beforeend','<div class="dot"></div>'));
+function typeQ(t){clearInterval(typer);qtext.innerHTML='<span class="caret"></span>';let n=0;
+  typer=setInterval(()=>{n+=2;qtext.innerHTML=t.slice(0,n)+'<span class="caret"></span>';
+    if(n>=t.length){clearInterval(typer);qtext.textContent=t;}},16);}
+function render(){
+  const Q=QUESTIONS[i];
+  document.querySelectorAll('.dots .dot').forEach((d,k)=>{
+    d.className='dot'+(k===i?' current':results[k]===true?' ok':results[k]===false?' bad':'');});
+  qnum.textContent=`Question ${i+1} of ${QUESTIONS.length}`;qtopic.textContent=Q.topic;
+  artbox.innerHTML=Q.art?ART[Q.art]:'';
+  typeQ(Q.q);
+  explainEl.style.display='none';nextBtn.style.display='none';optsEl.innerHTML='';
+  Q.opts.forEach((o,k)=>{const b=document.createElement('button');b.className='opt';
+    b.innerHTML=`<span class="key">${KEYS[k]}</span><span>${o}</span>`;
+    b.addEventListener('click',()=>answer(k));optsEl.appendChild(b);});
+  qStart=performance.now();
+}
+function answer(k){
+  const Q=QUESTIONS[i],secs=((performance.now()-qStart)/1000).toFixed(1),ok=k===Q.a;
+  results[i]=ok;if(ok)correct++;
+  [...optsEl.children].forEach((b,idx)=>{b.disabled=true;
+    if(idx===Q.a)b.classList.add('correct');else if(idx===k&&!ok)b.classList.add('wrong');});
+  explainEl.innerHTML=Q.ex+`<span style="display:block;margin-top:8px;font-size:.72rem;font-weight:700;color:var(--dim)">answered in ${secs}s</span>`;
+  explainEl.style.display='block';nextBtn.style.display='block';
+  nextBtn.textContent=i===QUESTIONS.length-1?'See my score':'Next question';
+  document.querySelectorAll('.dots .dot')[i].className='dot '+(ok?'ok':'bad');nextBtn.focus();
+}
+nextBtn.addEventListener('click',()=>{i++;i<QUESTIONS.length?render():showScore();});
+function showScore(){
+  qnum.parentElement.style.display='none';qtext.style.display='none';artbox.innerHTML='';
+  optsEl.style.display='none';explainEl.style.display='none';nextBtn.style.display='none';
+  const grade=GRADES.find(g=>correct>=g.min).label;
+  document.getElementById('finalScore').textContent=`${correct}/${QUESTIONS.length}`;
+  document.getElementById('grade').textContent=grade;
+  const missed=QUESTIONS.filter((_,k)=>!results[k]).map(q=>q.topic);
+  document.getElementById('stats').innerHTML=
+    `${results.filter(Boolean).length} correct · ${results.filter(r=>r===false).length} to review<br>`+
+    (missed.length?'revisit: '+[...new Set(missed)].join(' · '):'perfect run ❀');
+  scoreEl.style.display='block';
+  document.getElementById('share').onclick=function(){
+    const t=`Agentic Automation in n8n — Quiz · ${correct}/${QUESTIONS.length}\n${results.map(r=>r?'🟢':'🟠').join('')}\n${grade}`;
+    navigator.clipboard.writeText(t).then(()=>{this.textContent='Copied ✓';
+      setTimeout(()=>this.textContent='Copy my result',1600);}).catch(()=>{this.textContent=t;});};
+  document.getElementById('retry').onclick=()=>{i=0;correct=0;results=[];scoreEl.style.display='none';
+    qnum.parentElement.style.display='flex';qtext.style.display='block';optsEl.style.display='grid';render();};
+}
+render();
+(function(){const G=['→','⋯','{}','●','⇢','▸'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>
