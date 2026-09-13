@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Automation Drops</title>
+<meta name="description" content="Five daily drops on building a multi-agent system in n8n — deck, lab, playground, flash cards and quiz.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--sage:#7FA37A;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding-inline:24px}
+
+header{padding-block:74px 40px}
+.kick{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--clay);margin-bottom:16px}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:clamp(2.1rem,6vw,3.1rem);
+  line-height:1.04;letter-spacing:-.02em;text-wrap:balance}
+h1 .ac{color:var(--clay)}
+.sub{margin-top:16px;font-size:1rem;font-weight:600;line-height:1.65;color:#6B5647;max-width:56ch}
+
+/* the workflow being taught */
+.flow{margin-top:34px;padding:22px 24px;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;box-shadow:0 6px 22px rgba(122,90,64,.07)}
+.flow .lb{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.flow svg{display:block;width:100%;height:auto;max-width:100%}
+.flow .cap{margin-top:12px;font-size:.8rem;font-weight:700;color:var(--dim);line-height:1.5}
+
+/* the five drops — a real Mon→Fri sequence, so the day is the index */
+.drops{margin-block:44px 12px;display:flex;flex-direction:column;gap:12px}
+.drop{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:20px;
+  padding:20px 22px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--clay);
+  border-radius:0 14px 14px 0;text-decoration:none;color:inherit;
+  transition:transform .16s ease,box-shadow .16s ease,border-left-color .16s ease}
+.drop:hover,.drop:focus-visible{transform:translateX(4px);box-shadow:0 8px 24px rgba(122,90,64,.11);
+  border-left-color:var(--clay-deep)}
+.drop:focus-visible{outline:2px solid var(--clay-deep);outline-offset:3px}
+.day{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1rem;color:var(--clay);
+  letter-spacing:.04em;text-transform:uppercase}
+.day s{display:block;font-family:var(--mono);font-size:.58rem;font-weight:500;letter-spacing:.14em;
+  color:var(--dim);text-decoration:none;margin-top:3px}
+.t{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.12rem;line-height:1.25}
+.d{margin-top:5px;font-size:.86rem;font-weight:600;color:#6B5647;line-height:1.5}
+.go{font-size:1.15rem;color:var(--clay);font-weight:800}
+
+.note{margin-top:30px;padding:16px 20px;border-left:3px solid var(--sage);background:#EEF3EA;
+  border-radius:0 12px 12px 0;font-size:.85rem;font-weight:600;line-height:1.6;color:#3F6B47}
+
+footer{margin-top:52px;padding-block:26px 70px;border-top:1px solid var(--line);
+  font-size:.8rem;font-weight:600;color:var(--dim);line-height:1.75}
+footer b{color:var(--ink);font-weight:800}
+footer .fine{display:block;margin-top:8px;font-size:.74rem;font-style:italic}
+
+@media(max-width:560px){
+  header{padding-block:52px 30px}
+  .drop{grid-template-columns:1fr auto;gap:12px;padding:17px 18px}
+  .day{grid-column:1/-1}
+  .day s{display:inline;margin-left:8px}
+  .flow{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){.drop{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="kick">Be10x · Daily Drop</div>
+    <h1>Agentic automation:<br>a team of agents<br><span class="ac">inside n8n.</span></h1>
+    <p class="sub">Five drops on building a multi-agent system in n8n — one manager agent,
+      two specialists on its Tool port, and a report that writes and sends itself.
+      Stock analysis is just the worked example; the subject is the wiring.</p>
+
+    <div class="flow">
+      <div class="lb">What you'll build — 12 nodes</div>
+      <svg viewBox="0 0 620 150" role="img" aria-label="An n8n workflow: chat trigger into an orchestrator agent, then a code node and Gmail, with chat model, memory and two specialist agents attached underneath">
+        <!-- main line -->
+        <rect x="4" y="18" width="118" height="38" rx="11" fill="#FFFBF3" stroke="#B4785B" stroke-width="2"/>
+        <text x="63" y="36" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="#4A3830">When chat</text>
+        <text x="63" y="48" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="#4A3830">message received</text>
+
+        <rect x="162" y="18" width="140" height="38" rx="11" fill="#B4785B"/>
+        <text x="232" y="42" text-anchor="middle" font-family="Nunito" font-size="12" font-weight="800" fill="#FFF6E9">Orchestrator Agent</text>
+
+        <rect x="342" y="18" width="112" height="38" rx="11" fill="#FFFBF3" stroke="#B4785B" stroke-width="2"/>
+        <text x="398" y="36" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="#4A3830">Code in</text>
+        <text x="398" y="48" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="#4A3830">JavaScript</text>
+
+        <rect x="494" y="18" width="122" height="38" rx="11" fill="#FFFBF3" stroke="#B4785B" stroke-width="2"/>
+        <text x="555" y="42" text-anchor="middle" font-family="Nunito" font-size="10.5" font-weight="800" fill="#4A3830">Send a message</text>
+
+        <path d="M122 37h34" stroke="#C9B7A2" stroke-width="2.6"/><path d="M162 37l-9-5v10z" fill="#C9B7A2"/>
+        <path d="M302 37h34" stroke="#C9B7A2" stroke-width="2.6"/><path d="M342 37l-9-5v10z" fill="#C9B7A2"/>
+        <path d="M454 37h34" stroke="#C9B7A2" stroke-width="2.6"/><path d="M494 37l-9-5v10z" fill="#C9B7A2"/>
+
+        <!-- sub-node wires, dotted and downward -->
+        <path d="M186 56v20H74v22" fill="none" stroke="#B4785B" stroke-width="1.8" stroke-dasharray="4 4"/>
+        <path d="M214 56v42" fill="none" stroke="#B4785B" stroke-width="1.8" stroke-dasharray="4 4"/>
+        <path d="M252 56v20h108v22" fill="none" stroke="#B4785B" stroke-width="1.8" stroke-dasharray="4 4"/>
+        <path d="M280 56v20h222v22" fill="none" stroke="#B4785B" stroke-width="1.8" stroke-dasharray="4 4"/>
+
+        <rect x="14" y="98" width="120" height="34" rx="9" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.8"/>
+        <text x="74" y="112" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Chat Model</text>
+        <text x="74" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#C97B7B">required</text>
+
+        <rect x="156" y="98" width="116" height="34" rx="9" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.8"/>
+        <text x="214" y="112" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Simple Memory</text>
+        <text x="214" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#A08B79">optional</text>
+
+        <rect x="296" y="98" width="128" height="34" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.8"/>
+        <text x="360" y="112" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Fundamental Agent</text>
+        <text x="360" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7FA37A">tool · what to buy</text>
+
+        <rect x="440" y="98" width="128" height="34" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.8"/>
+        <text x="504" y="112" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">Technical Agent</text>
+        <text x="504" y="124" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#7FA37A">tool · when to buy</text>
+
+        <text x="4" y="146" font-family="Nunito" font-size="8.5" font-weight="800" fill="#A08B79">SOLID → MAIN LINE, CARRIES DATA · DOTTED ↓ SUB-NODES, GIVE THE AGENT A CAPABILITY</text>
+      </svg>
+      <p class="cap">Each specialist carries its own chat model and its own SerpAPI search tool —
+        that's the remaining four of the twelve.</p>
+    </div>
+  </header>
+
+  <main class="drops">
+    <a class="drop" href="carousel/">
+      <div class="day">Mon<s>PDF</s></div>
+      <div><div class="t">Multi-agent systems in n8n</div>
+        <div class="d">A 12-slide deck, cover to close. Swipe through it, or hit Save as PDF.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="lab/">
+      <div class="day">Tue<s>Hands-on</s></div>
+      <div><div class="t">Wire the workflow</div>
+        <div class="d">Connect all twelve nodes yourself, then diagnose six failures that actually happen.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="playground/">
+      <div class="day">Wed<s>Interactive</s></div>
+      <div><div class="t">Twelve nodes, one team of agents</div>
+        <div class="d">Six live widgets — pull the brain out of an agent and watch exactly what breaks.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="flashcards/">
+      <div class="day">Thu<s>Flash cards</s></div>
+      <div><div class="t">Twelve ideas that make n8n agents click</div>
+        <div class="d">Node, trigger, item, expression, ports, agent-as-tool. Tap to flip.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="quiz/">
+      <div class="day">Fri<s>Quiz</s></div>
+      <div><div class="t">Ten questions on agents in n8n</div>
+        <div class="d">Mechanics and design judgement, with an explanation after every answer.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+  </main>
+
+  <p class="note">Start anywhere, but the deck on Monday sets up the vocabulary the other four lean on —
+    especially the row of ports underneath an AI Agent node, which is where most n8n builds go wrong.</p>
+
+  <footer>
+    Be10x · Daily Drop — <b>Agentic Automation: AI-Driven Multi-Agent Workflow Engineering</b><br>
+    Built by <b>Eshmith Saideep</b>
+    <span class="fine">Educational material for learning n8n. The stock analysis used throughout is a
+      worked example for teaching workflow wiring — not financial advice.</span>
+  </footer>
+</div>
+
+</body>
+</html>
