@@ -3,7 +3,8 @@
   "cleanUrls": true,
   "trailingSlash": true,
   "redirects": [
-    { "source": "/n8n-multiagent-:drop.html", "destination": "/n8n/:drop/", "permanent": true },
-    { "source": "/n8n-multiagent-:drop",      "destination": "/n8n/:drop/", "permanent": true }
+    { "source": "/n8n-multiagent-:drop/",      "destination": "/n8n/:drop/", "permanent": true },
+    { "source": "/n8n-multiagent-:drop",       "destination": "/n8n/:drop/", "permanent": true },
+    { "source": "/n8n-multiagent-:drop.html",  "destination": "/n8n/:drop/", "permanent": true }
   ]
 }
