@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Engineering — Flash Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9F4FB;--card:#FDFEFF;--line:#CFE4F2;--ink:#24425C;--dim:#7C9AB3;
+  --sky:#3E97D1;--sky-deep:#2E7AB0;--ok:#5FAF97;--ok-bg:#E8F5F0;--bad:#E08A8A;--bad-bg:#FBEDED;
+  --mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  display:flex;justify-content:center;padding:22px 14px 44px;min-height:100vh}
+.app{width:100%;max-width:440px}
+header{text-align:center;margin-bottom:14px}
+.hero{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.hero[hidden]{display:none}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--sky);margin-bottom:6px}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.9rem;line-height:1.05}
+h1 .accent{color:var(--sky)}
+.sub{font-size:.85rem;color:var(--dim);margin-top:6px;font-weight:600}
+.orn{color:var(--sky);font-size:.9rem;margin-top:8px;letter-spacing:.5em}
+.dots{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin:14px 0 16px}
+.dots .dot{width:9px;height:9px;border-radius:50%;background:var(--line);transition:all .3s}
+.dots .dot.current{background:var(--sky);transform:scale(1.35)}
+.dots .dot.ok{background:var(--ok)}.dots .dot.again{background:var(--bad)}
+.stage{perspective:1200px;margin-bottom:14px}
+.flip{position:relative;width:100%;height:372px;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,.1,.2,1);cursor:pointer}
+.flip.flipped{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 28px rgba(46,108,158,.1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 22px}
+.face.back{transform:rotateY(180deg)}
+.face .cat{font-size:.64rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.face svg{margin-bottom:10px}
+.face .term{font-family:'Fraunces',serif;font-weight:900;font-size:1.72rem;line-height:1.1}
+.face .tease{margin-top:9px;font-size:.97rem;font-weight:700;color:var(--sky-deep);font-style:italic;max-width:26ch;line-height:1.4}
+.face .hint{margin-top:14px;font-size:.74rem;font-weight:700;color:var(--dim)}
+.face .def{font-size:.96rem;line-height:1.6;color:#3D5A73;font-weight:600;max-width:34ch}
+.face .def b{color:var(--sky-deep)}
+.face .code{font-family:var(--mono);font-size:.73rem;background:var(--bg);border-radius:9px;padding:8px 11px;
+  margin-top:11px;color:var(--sky-deep);max-width:100%;overflow-x:auto;line-height:1.5}
+.face .memory{margin-top:12px;font-family:'Permanent Marker',cursive;font-size:.87rem;color:var(--sky);transform:rotate(-2deg)}
+.actions{display:none;grid-template-columns:1fr 1fr;gap:10px}
+.actions button{font-family:'Fraunces',serif;font-weight:900;font-size:.98rem;border:none;border-radius:14px;padding:15px;cursor:pointer}
+.actions .again{background:var(--bad-bg);color:#B96A6A;border:1.5px solid var(--bad)}
+.actions .knew{background:var(--ok);color:#F0FAF7}
+.tapnote{text-align:center;font-size:.74rem;font-weight:700;color:var(--dim);margin-top:4px}
+.done{display:none;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:30px 22px;box-shadow:0 8px 28px rgba(46,108,158,.1)}
+.done .bloom{font-size:2.2rem;margin-bottom:6px}
+.done h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;margin-bottom:4px}
+.done .big{font-family:'Fraunces',serif;font-weight:900;font-size:2.8rem;color:var(--sky);margin:8px 0 2px}
+.done .grade{color:var(--dim);font-size:.92rem;font-weight:700;margin-bottom:16px;line-height:1.5}
+.done .stats{font-size:.8rem;font-weight:600;color:var(--dim);border-top:1.5px dashed var(--line);
+  border-bottom:1.5px dashed var(--line);padding:12px 0;margin-bottom:18px;line-height:1.9}
+.btnrow{display:grid;gap:10px}
+.primary{font-family:'Fraunces',serif;font-weight:900;font-size:1rem;color:#FDFEFF;background:var(--sky);
+  border:none;border-radius:14px;padding:15px;cursor:pointer}
+.primary:hover{background:var(--sky-deep)}
+.ghost{font-weight:800;color:var(--sky);background:none;border:1.5px solid var(--sky);border-radius:14px;padding:14px;cursor:pointer;font-size:.95rem}
+footer{margin-top:18px;text-align:center;font-size:.68rem;font-weight:700;color:#9DBCD4;letter-spacing:.14em;text-transform:uppercase}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(46,108,158,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:#fff;border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.82rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.73rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-sky .in{background:var(--sky);color:#F2FAFF}
+.t-teal .in{background:var(--ok);color:#F0FAF7}
+.t-slate .in{background:var(--ink);color:#E9F4FB}
+.t-white .in{background:#fff;color:var(--sky-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+body,button,.flip,.dot{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Ccircle cx='10' cy='10' r='6.6' fill='%23FDFEFF' stroke='%233E97D1' stroke-width='2'/%3E%3Cpath d='M6.6 10h6.8' stroke='%233E97D1' stroke-width='1.6' stroke-linecap='round'/%3E%3Cpath d='M15 15l6.2 6.2' stroke='%233E97D1' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") 4 4, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--sky);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.flip{transition:none}.sticker .in{animation:none}}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🔍</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">📚</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🗂️</span></div>
+<div class="sticker st-t sm t-sky"  style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">top-k ≠ correct</span></div>
+<div class="sticker st-t sm t-teal" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">hybrid by default</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">🧭</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">📄</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚠️</span></div>
+<div class="sticker st-t sm t-white" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">k = 60</span></div>
+<div class="sticker st-t sm t-slate st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">rank 7 → rank 1</span></div>
+
+<div class="app">
+  <header>
+    <img class="hero" id="hero" alt="" hidden>
+    <div class="eyebrow">Daily Drop · Flash Cards</div>
+    <h1>Twelve ideas between<br><span class="accent">question and answer</span></h1>
+    <div class="sub">12 cards · tap to flip · be honest with yourself</div>
+    <div class="orn">✦ ✦ ✦</div>
+  </header>
+  <div class="dots" id="dots"></div>
+  <div class="stage">
+    <div class="flip" id="flip" role="button" tabindex="0">
+      <div class="face front">
+        <div class="cat" id="fcat"></div><div id="fart"></div>
+        <div class="term" id="fterm"></div><div class="tease" id="ftease"></div>
+        <div class="hint">tap to flip ↻</div>
+      </div>
+      <div class="face back">
+        <div class="cat" id="bcat"></div><div class="def" id="bdef"></div>
+        <div class="code" id="bcode"></div><div class="memory" id="bmem"></div>
+      </div>
+    </div>
+  </div>
+  <div class="actions" id="actions">
+    <button class="again" id="btnAgain">Still learning</button>
+    <button class="knew" id="btnKnew">Knew it ✓</button>
+  </div>
+  <div class="tapnote" id="tapnote">flip the card first, then rate yourself</div>
+  <div class="done" id="done">
+    <div class="bloom">🔍</div>
+    <h2>Deck complete!</h2>
+    <div class="big" id="finalScore"></div>
+    <div class="grade" id="grade"></div>
+    <div class="stats" id="stats"></div>
+    <div class="btnrow">
+      <button class="primary" id="reviewBtn" style="display:none">Review the ones I missed</button>
+      <button class="primary" id="share">Copy my result</button>
+      <button class="ghost" id="restart">Restart full deck</button>
+    </div>
+  </div>
+  <footer>index · retrieve · rerank · evaluate · Eshmith Saideep</footer>
+</div>
+<script>
+/* ===== paste your generated image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ============================================================ */
+if(HERO_IMAGE){const h=document.getElementById("hero");h.src=HERO_IMAGE;h.hidden=false;}
+const S={sky:'#3E97D1',deep:'#2E7AB0',ink:'#24425C',line:'#CFE4F2',bg:'#E9F4FB',ok:'#5FAF97',dim:'#7C9AB3',bad:'#E08A8A'};
+const IC={
+ chunk:`<svg width="140" height="54" viewBox="0 0 140 54"><rect x="18" y="4" width="46" height="46" rx="6" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><rect x="76" y="4" width="46" height="46" rx="6" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/>${[0,1,2].map(i=>`<rect x="26" y="${13+i*12}" width="30" height="5" rx="2.5" fill="${i===2?S.bad:S.line}"/><rect x="84" y="${13+i*12}" width="30" height="5" rx="2.5" fill="${i===0?S.bad:S.line}"/>`).join('')}<path d="M70 2v50" stroke="${S.bad}" stroke-width="2" stroke-dasharray="4 4"/></svg>`,
+ cloud:`<svg width="140" height="52" viewBox="0 0 140 52">${[[16,34],[34,13],[52,41],[64,22],[96,31],[112,11],[126,38],[102,47],[44,27]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.6" fill="${S.line}"/>`).join('')}<circle cx="76" cy="33" r="5.4" fill="${S.sky}"/><circle cx="86" cy="39" r="5.4" fill="${S.deep}"/><path d="M76 33l10 6" stroke="${S.sky}" stroke-width="1.8"/></svg>`,
+ store:`<svg width="140" height="54" viewBox="0 0 140 54"><path d="M14 12v26c0 4.4 11.6 8 26 8s26-3.6 26-8V12" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><ellipse cx="40" cy="12" rx="26" ry="8" fill="${S.sky}"/><ellipse cx="40" cy="27" rx="26" ry="8" fill="none" stroke="${S.line}" stroke-width="1.6"/><circle cx="94" cy="18" r="4" fill="${S.line}"/><circle cx="122" cy="14" r="4" fill="${S.line}"/><circle cx="128" cy="40" r="4" fill="${S.line}"/><circle cx="104" cy="40" r="5.6" fill="${S.ok}"/><path d="M74 26q18-14 30 12" fill="none" stroke="${S.sky}" stroke-width="2" stroke-dasharray="4 3"/></svg>`,
+ tag:`<svg width="112" height="50" viewBox="0 0 112 50"><path d="M12 25l18-15h58a8 8 0 018 8v14a8 8 0 01-8 8H30z" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><circle cx="36" cy="25" r="4" fill="${S.sky}"/><text x="66" y="29" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="${S.deep}">year=2025</text></svg>`,
+ topk:`<svg width="140" height="54" viewBox="0 0 140 54">${[0,1,2].map(i=>`<text x="6" y="${18+i*16}" font-family="JetBrains Mono" font-size="9" fill="${S.dim}">${i+1}</text><rect x="20" y="${9+i*16}" width="${112-i*20}" height="11" rx="5.5" fill="${i===0?S.sky:S.line}"/>`).join('')}</svg>`,
+ bm25:`<svg width="142" height="50" viewBox="0 0 142 50"><rect x="4" y="14" width="104" height="22" rx="6" fill="${S.bg}" stroke="${S.line}" stroke-width="1.6"/><text x="18" y="29" font-family="JetBrains Mono" font-size="9" fill="${S.ink}">casual leave</text><circle cx="96" cy="25" r="15" fill="none" stroke="${S.sky}" stroke-width="2.6"/><path d="M107 36l11 10" stroke="${S.sky}" stroke-width="3.4" stroke-linecap="round"/></svg>`,
+ hybrid:`<svg width="150" height="54" viewBox="0 0 150 54"><rect x="4" y="6" width="42" height="18" rx="5" fill="${S.sky}"/><rect x="4" y="30" width="42" height="18" rx="5" fill="${S.ok}"/><path d="M50 15h20q8 0 8 8v8q0 8 8 8h8" fill="none" stroke="${S.line}" stroke-width="2.6"/><path d="M50 39h20q8 0 8-8v-8q0-8 8-8h8" fill="none" stroke="${S.line}" stroke-width="2.6"/><rect x="100" y="14" width="46" height="26" rx="7" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/>${[0,1].map(i=>`<rect x="108" y="${21+i*9}" width="30" height="5" rx="2.5" fill="${i===0?S.sky:S.ok}"/>`).join('')}</svg>`,
+ rrf:`<svg width="150" height="50" viewBox="0 0 150 50"><rect x="2" y="10" width="16" height="12" rx="4" fill="${S.sky}"/><rect x="2" y="28" width="16" height="12" rx="4" fill="${S.ok}"/><path d="M22 16h12M22 34h12" stroke="${S.line}" stroke-width="2.6" stroke-linecap="round"/><rect x="40" y="8" width="108" height="34" rx="9" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><text x="94" y="30" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="${S.deep}">Σ 1/(60+r)</text></svg>`,
+ funnel:`<svg width="150" height="54" viewBox="0 0 150 54"><path d="M10 8h96l-34 22v18l-28-8V30z" fill="${S.bg}" stroke="${S.sky}" stroke-width="2" stroke-linejoin="round"/><text x="58" y="24" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="${S.deep}">25</text><path d="M112 38h12" stroke="${S.sky}" stroke-width="2.4" stroke-linecap="round"/><path d="M128 38l-7-4.5v9z" fill="${S.sky}"/><circle cx="140" cy="38" r="7" fill="${S.ok}"/><text x="140" y="41.5" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#fff">3</text></svg>`,
+ ctx:`<svg width="150" height="54" viewBox="0 0 150 54"><rect x="12" y="4" width="126" height="46" rx="7" fill="${S.bg}" stroke="${S.sky}" stroke-width="1.8"/><path d="M12 11a7 7 0 017-7h112a7 7 0 017 7v9H12z" fill="${S.sky}"/><text x="75" y="16" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#fff">2025 leave policy · §4</text>${[0,1,2].map(i=>`<rect x="22" y="${27+i*8}" width="${106-i*24}" height="5" rx="2.5" fill="${S.line}"/>`).join('')}</svg>`,
+ middle:`<svg width="150" height="54" viewBox="0 0 150 54"><line x1="8" y1="48" x2="142" y2="48" stroke="${S.line}" stroke-width="1.6"/><path d="M14 12C42 12 48 40 75 40s33-28 61-28" fill="none" stroke="${S.sky}" stroke-width="3" stroke-linecap="round"/><circle cx="14" cy="12" r="4.4" fill="${S.sky}"/><circle cx="136" cy="12" r="4.4" fill="${S.sky}"/><circle cx="75" cy="40" r="5" fill="${S.bad}"/><text x="75" y="22" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="${S.dim}">middle</text></svg>`,
+ faith:`<svg width="150" height="52" viewBox="0 0 150 52"><rect x="4" y="8" width="104" height="36" rx="8" fill="${S.bg}" stroke="${S.line}" stroke-width="1.6"/>${[0,1].map(i=>`<rect x="16" y="${18+i*11}" width="${80-i*28}" height="5" rx="2.5" fill="${S.line}"/>`).join('')}<circle cx="116" cy="26" r="15" fill="${S.ok}"/><path d="M109 26l5 5.5 10-11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+};
+const DECK=[
+ {cat:"indexing",ic:'chunk',term:"Chunk",tease:"The unit of what can be retrieved",
+  def:"The piece your document gets cut into — and <b>the unit of what can be retrieved</b>. If the carry-over rule is split across two chunks, no retriever saves you.",
+  code:"256–512 tokens, split on structure",mem:"chunking decides what is answerable"},
+ {cat:"indexing",ic:'cloud',term:"Embedding",tease:"Casual and earned leave, side by side",
+  def:"Text as a list of numbers, so <b>similar meaning lands nearby</b>. Typically 1024–1536 dimensions. Casual leave and earned leave are written alike, so they sit close together.",
+  code:"casual leave → [0.02, −0.31, …] · 1536 dims",mem:"meaning becomes a location"},
+ {cat:"indexing",ic:'store',term:"Vector store",tease:"Searchable — but approximately",
+  def:"Keeps the vectors searchable. Exact search is too slow at scale, so stores use <b>ANN</b> — approximate nearest neighbour, usually HNSW — trading a little recall for a lot of speed.",
+  code:"ANN · HNSW · approximate on purpose",mem:"a little recall for a lot of speed"},
+ {cat:"indexing",ic:'tag',term:"Metadata",tease:"The 2023 handbook is still in there",
+  def:"The fields stored beside the vector — <b>year, policy, section</b>. A filter fixes what a better embedding cannot: the 2023 handbook still sitting in your index.",
+  code:"year = 2025 · policy = leave",mem:"filter first, then search"},
+ {cat:"retrieving",ic:'topk',term:"Top-k",tease:"The k nearest, not the k most correct",
+  def:"The k chunks closest to your question by <b>cosine similarity</b>; normal k is 5–20 before reranking. Similarity is not correctness — the earned-leave chunk is very similar, and wrong.",
+  code:"k = 5–20 · ranked by cosine similarity",mem:"near is not the same as right"},
+ {cat:"retrieving",ic:'bm25',term:"BM25",tease:"The keyword search you were told was legacy",
+  def:"Lexical scoring that catches the exact string — <b>policy names, IDs, acronyms</b>. Still wins where dense retrieval blurs near-identical wording, like casual leave against earned leave.",
+  code:'exact match on "casual leave"',mem:"it finds the words you actually typed"},
+ {cat:"retrieving",ic:'hybrid',term:"Hybrid search",tease:"Dense and sparse, not either/or",
+  def:"Dense embeddings and BM25 run together, their results merged. <b>The default now, not an optimisation</b> — vectors catch the paraphrase, keywords catch the exact phrase.",
+  code:"dense + sparse → fuse → rank",mem:"two searches, one list"},
+ {cat:"retrieving",ic:'rrf',term:"Reciprocal Rank Fusion",tease:"Merging two lists that share no scale",
+  def:"Combines two ranked lists <b>by rank, not by score</b>, so two very different scoring systems need no calibration. k = 60 is the near-universal default.",
+  code:"score = Σ 1/(60 + rank)",mem:"rank travels, scores don’t"},
+ {cat:"making it better",ic:'funnel',term:"Reranker",tease:"Retrieve wide, then judge properly",
+  def:"A <b>cross-encoder</b> that reads the query and the chunk together, instead of comparing two vectors. Retrieve ~25, keep ~3: roughly 80–150ms, and usually the best quality-per-effort in the pipeline.",
+  code:"retrieve 25 → rerank → keep 3",mem:"rank 7 becomes rank 1"},
+ {cat:"making it better",ic:'ctx',term:"Contextual Retrieval",tease:"Give the chunk back its document",
+  def:"Before embedding, an LLM writes 50–100 tokens situating each chunk in its document, and you prepend them. <b>Anthropic reports</b> retrieval failures cut 35%, 49% with contextual BM25, 67% adding reranking.",
+  code:'"From the 2025 leave policy, §4 — casual leave"',mem:"a chunk that remembers where it came from"},
+ {cat:"making it better",ic:'middle',term:"Lost in the middle",tease:"The middle of the prompt is a blind spot",
+  def:"Models attend to the <b>start and end</b> of a long context and miss what is buried in between. Bigger windows did not fix it. Retrieve fewer, better chunks — and put the strongest first.",
+  code:"Liu et al., 2023 · strongest chunk first",mem:"the middle is where answers go to hide"},
+ {cat:"measuring it",ic:'faith',term:"Faithfulness",tease:"Perfect recall, wrong answer",
+  def:"Is <b>every claim in the answer supported by the retrieved context</b>? You can hit perfect recall@k and still answer wrongly — which is why retrieval metrics alone are not enough.",
+  code:"supported claims ÷ total claims",mem:"retrieving it is not the same as using it"}
+];
+const GRADES=[
+ {min:11,label:"Retrieval instincts 🔍 You'd know why the wrong chunk came back."},
+ {min:8,label:"Almost there — review the marked cards."},
+ {min:5,label:"Halfway 🌱 One review round will lock these in."},
+ {min:0,label:"First pass done. Run the review — that's how it sticks."}
+];
+const dots=document.getElementById('dots'),flip=document.getElementById('flip');
+const actions=document.getElementById('actions'),tapnote=document.getElementById('tapnote'),doneEl=document.getElementById('done');
+let order=DECK.map((_,k)=>k),pos=0,known={},isReview=false;
+function buildDots(){dots.innerHTML='';order.forEach(()=>dots.insertAdjacentHTML('beforeend','<div class="dot"></div>'));}
+function render(){
+  const c=DECK[order[pos]];
+  document.querySelectorAll('.dots .dot').forEach((d,k)=>{const idx=order[k];
+    d.className='dot'+(k===pos?' current':known[idx]===true?' ok':known[idx]===false?' again':'');});
+  flip.classList.remove('flipped');
+  fcat.textContent=c.cat;fart.innerHTML=IC[c.ic]||'';fterm.textContent=c.term;ftease.textContent=c.tease;
+  bcat.textContent=c.term;bdef.innerHTML=c.def;
+  bcode.textContent=c.code||'';bcode.style.display=c.code?'block':'none';
+  bmem.textContent='“'+c.mem+'”';
+  actions.style.display='none';tapnote.style.display='block';
+}
+function doFlip(){if(doneEl.style.display==='block')return;flip.classList.toggle('flipped');
+  if(flip.classList.contains('flipped')){actions.style.display='grid';tapnote.style.display='none';}}
+flip.addEventListener('click',doFlip);
+flip.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();doFlip();}});
+function rate(k){known[order[pos]]=k;
+  document.querySelectorAll('.dots .dot')[pos].className='dot '+(k?'ok':'again');
+  pos++;pos<order.length?setTimeout(render,180):showDone();}
+btnKnew.addEventListener('click',()=>rate(true));
+btnAgain.addEventListener('click',()=>rate(false));
+function showDone(){
+  const total=order.length,got=order.filter(i=>known[i]).length,missed=order.filter(i=>!known[i]);
+  flip.parentElement.style.display='none';actions.style.display='none';tapnote.style.display='none';
+  doneEl.style.display='block';finalScore.textContent=`${got}/${total}`;
+  grade.textContent=(isReview&&!missed.length)?"Review round cleared ⚡ Every card locked in."
+    :GRADES.find(g=>got>=g.min*total/12).label;
+  stats.innerHTML=missed.length?'still learning: '+missed.map(i=>DECK[i].term).join(' · '):'every card marked known ✦';
+  reviewBtn.style.display=missed.length?'block':'none';
+  reviewBtn.onclick=()=>{order=missed.slice();order.forEach(i=>delete known[i]);pos=0;isReview=true;
+    doneEl.style.display='none';flip.parentElement.style.display='block';buildDots();render();};
+  share.onclick=function(){
+    const t=`RAG Engineering Flash Cards — ${got}/${total} known\n${order.map(i=>known[i]?'🟢':'🟠').join('')}`;
+    navigator.clipboard.writeText(t).then(()=>{this.textContent='Copied ✓';
+      setTimeout(()=>this.textContent='Copy my result',1600);}).catch(()=>{this.textContent=t;});};
+  restart.onclick=()=>{order=DECK.map((_,k)=>k);known={};pos=0;isReview=false;
+    doneEl.style.display='none';flip.parentElement.style.display='block';buildDots();render();};
+}
+buildDots();render();
+(function(){const G=['≈','⌕','▤','Σ','k','●'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>

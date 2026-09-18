@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build agents with LangChain — Carousel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--sage:#7FA37A;--rose:#C97B7B;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 34px}
+.head{text-align:center;margin-bottom:16px}
+.head .eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+.head h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;margin-top:5px}
+.frame{width:100%;max-width:460px}
+.progress{height:4px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.progress i{display:block;height:100%;background:var(--clay);border-radius:3px;transition:width .4s cubic-bezier(.3,.8,.3,1)}
+.track{position:relative;width:100%;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(122,90,64,.16);touch-action:pan-y}
+.slide{position:absolute;inset:0;background:var(--card);padding:60px 30px 32px;display:flex;flex-direction:column;
+  justify-content:center;opacity:0;transform:translateX(28px) scale(.98);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.slide .num{position:absolute;top:30px;left:30px;font-family:'Fraunces',serif;font-weight:900;font-size:.88rem;color:var(--clay)}
+.slide h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;line-height:1.14;letter-spacing:-.015em;margin-bottom:11px}
+.slide h2 .ac{color:var(--clay)}
+.slide p{font-size:.93rem;line-height:1.6;font-weight:600;color:#6B5647;max-width:32ch}
+.slide p b{color:var(--ink)}
+.slide .foot{margin-top:15px;padding-top:12px;border-top:1.5px dashed var(--line);font-size:.75rem;font-weight:800;color:var(--dim)}
+.slide svg{display:block;margin:0 0 12px;max-width:100%;height:auto}
+.ba{display:grid;gap:9px;margin-bottom:12px}
+.ba div{border-radius:12px;padding:11px 13px;font-size:.83rem;line-height:1.5}
+.ba .bad{background:#F7EAEA;border-left:4px solid var(--rose)}
+.ba .good{background:#EEF3EA;border-left:4px solid var(--sage)}
+.ba .lb{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.ba .bad .lb{color:var(--rose)}.ba .good .lb{color:var(--sage)}
+.ba code{font-family:var(--mono);font-size:.78rem;color:var(--ink)}
+.rows{display:grid;gap:7px;margin-bottom:4px}
+.rows.tight{gap:5px}
+.rows.tight .row{padding:6px 12px}
+.row{display:flex;align-items:center;gap:11px;background:var(--bg);border-radius:11px;padding:9px 12px}
+.row .b{width:24px;height:24px;border-radius:7px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:.76rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.row .b.x{background:var(--rose)}
+.row .tx{font-size:.83rem;font-weight:700;line-height:1.3}
+.row .tx s{display:block;font-size:.71rem;font-weight:700;color:var(--dim);text-decoration:none;margin-top:1px}
+.row .tx em{font-family:var(--mono);font-style:normal;font-weight:500;font-size:.74rem;color:var(--rose);text-decoration:line-through}
+.row .tx i{font-family:var(--mono);font-style:normal;font-weight:500;font-size:.74rem;color:var(--sage)}
+.code{font-family:var(--mono);font-size:clamp(.56rem,2.45vw,.75rem);font-variant-ligatures:none;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:12px 14px;line-height:1.8;margin:2px 0 11px;overflow-x:auto;white-space:pre-wrap}
+.code .kw{color:#E8B583}.code .cm{color:#9A8776}
+.slide.cover{background:var(--clay);color:#FFF6E9;justify-content:center;align-items:flex-start}
+.slide.cover .kick{font-size:.7rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.85;margin-bottom:14px}
+.slide.cover h2{font-size:2.3rem;color:#FFF6E9;margin-bottom:12px}
+.slide.cover p{color:#F6E5D3}
+.slide.cover .swipe{position:absolute;bottom:30px;left:30px;font-size:.8rem;font-weight:800;opacity:.9}
+.covart{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;margin-bottom:16px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.covart[hidden]{display:none}
+.slide.end{background:var(--ink);color:#F7EFE2;justify-content:center}
+.slide.end h2{color:#F7EFE2;font-size:1.9rem}
+.slide.end p{color:#D9C8B8}
+.slide.end .tag{display:inline-block;margin-top:16px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:1rem;padding:11px 20px;border-radius:12px}
+.slide.end .by{margin-top:13px;font-size:.7rem;font-weight:800;letter-spacing:.1em;color:#A08B79}
+.controls{display:flex;align-items:center;gap:14px;margin-top:16px;justify-content:center}
+.nav{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--clay);
+  font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.nav:hover:not(:disabled){background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.nav:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer;transition:all .25s}
+.dot.on{background:var(--clay);width:22px;border-radius:5px}
+.hintline{margin-top:12px;text-align:center;font-size:.7rem;font-weight:700;color:var(--dim);letter-spacing:.06em}
+.pdfrow{margin-top:10px;text-align:center}
+.pdfbtn{font-family:'Nunito',system-ui,sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 15px;cursor:pointer;transition:all .15s}
+.pdfbtn:hover{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.credit{margin-top:10px;text-align:center;font-size:.66rem;font-weight:700;color:var(--dim);letter-spacing:.08em}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(122,90,64,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:var(--card);border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.81rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.72rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-clay .in{background:var(--clay);color:#FFF6E9}
+.t-sage .in{background:var(--sage);color:#F4F8F1}
+.t-ink .in{background:var(--ink);color:#F7EFE2}
+.t-cream .in{background:var(--card);color:var(--clay-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+@media(max-width:492px){
+  body{padding:18px 12px 28px}
+  .head h1{font-size:1.3rem}
+  .slide{padding:44px 18px 22px}
+  .slide .num{top:20px;left:18px;font-size:.8rem}
+  .slide h2{font-size:1.36rem;margin-bottom:9px}
+  .slide p{font-size:.82rem;line-height:1.5}
+  .slide .foot{margin-top:11px;padding-top:9px;font-size:.68rem}
+  .slide.cover h2{font-size:1.85rem}
+  .slide.cover .kick{margin-bottom:10px}
+  .slide.cover .swipe{bottom:22px;left:18px}
+  .slide.end h2{font-size:1.5rem}
+  .slide.end .tag{font-size:.9rem;padding:9px 16px;margin-top:12px}
+  .rows{gap:6px}
+  .row{padding:6px 10px;gap:9px}
+  .rows.tight .row{padding:4px 10px}
+  .row .b{width:20px;height:20px;font-size:.68rem}
+  .row .tx{font-size:.78rem}
+  .row .tx s{font-size:.66rem}
+  .row .tx em,.row .tx i{font-size:.67rem}
+  .ba{gap:7px;margin-bottom:10px}
+  .ba div{padding:8px 10px;font-size:.74rem}
+  .ba code{font-size:.74rem}
+  .code{padding:10px 12px;line-height:1.62;margin:2px 0 9px}
+}
+body,button,.dot,.nav{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Cpath d='M3 9h18M9 9v11M15 9v11' stroke='%23B4785B' stroke-width='1.6'/%3E%3C/svg%3E") 4 3, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--clay);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.slide{transition:none}.sticker .in{animation:none}}
+@media print{
+  @page{margin:12mm}
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  body{background:#fff;display:block;min-height:0;padding:0;cursor:auto}
+  .sticker,.trail,.controls,.dots,.nav,.progress,.hintline,.pdfrow{display:none !important}
+  .head{margin:0 0 7mm}
+  .frame{max-width:170mm;width:100%;margin:0 auto}
+  .track{position:static;display:block;width:100%;height:auto;aspect-ratio:auto;
+    overflow:visible;border-radius:0;box-shadow:none;touch-action:auto}
+  .slide{position:relative;inset:auto;width:100%;aspect-ratio:1/1;margin:0 auto;
+    opacity:1 !important;transform:none !important;pointer-events:auto;transition:none;
+    border:1px solid var(--line);border-radius:20px;
+    page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  .slide.cover,.slide.end{border:none}
+  .slide:last-child{page-break-after:auto;break-after:auto}
+  .credit{margin-top:6mm;page-break-before:avoid}
+}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🔗</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🧰</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🐍</span></div>
+<div class="sticker st-t sm t-clay" style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">@tool</span></div>
+<div class="sticker st-t sm t-sage" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">create_agent</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">🔁</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">📦</span></div>
+<div class="sticker st-t sm t-cream" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">thread_id</span></div>
+<div class="sticker st-t sm t-ink" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">ToolMessage</span></div>
+<div class="sticker st-t sm t-ink st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">swipe →</span></div>
+
+<div class="head">
+  <div class="eyebrow">Daily Drop · Carousel</div>
+  <h1>Build agents with LangChain</h1>
+</div>
+
+<div class="frame">
+  <div class="progress"><i id="bar"></i></div>
+  <div class="track" id="track">
+
+    <section class="slide cover on">
+      <img class="covart" id="covart" alt="" hidden>
+      <div class="kick">Be10x · Daily Drop</div>
+      <h2>One question.<br>Three tool calls.<br>No script.</h2>
+      <p>An agent that decides its own steps — in about 20 lines of LangChain.</p>
+      <div class="swipe">Swipe →</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">01</div>
+      <h2>A chain follows<br>your <span class="ac">script</span></h2>
+      <div class="code"><span class="kw">from</span> langchain.chat_models <span class="kw">import</span> init_chat_model
+
+model = init_chat_model(
+    "anthropic:claude-sonnet-5")
+chain = prompt | model | parser
+
+chain.invoke({"question": q})
+<span class="cm"># three hops. always three.</span></div>
+      <p><b>LCEL is not deprecated.</b> For a fixed pipeline it is still exactly the right tool.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">02</div>
+      <h2>An agent<br><span class="ac">decides</span></h2>
+      <div class="ba">
+        <div class="bad"><span class="lb">scripted — a chain</span><code>prompt | model | parser</code></div>
+        <div class="good"><span class="lb">decided — an agent</span><code>lookup_order → search_policy → days_since</code></div>
+      </div>
+      <p>"Where is my order 4471, and can I still return it?" took three tool calls — <b>because the model chose three.</b></p>
+    </section>
+
+    <section class="slide">
+      <div class="num">03</div>
+      <h2>Three arguments.<br>That's the <span class="ac">agent</span>.</h2>
+      <div class="code"><span class="kw">from</span> langchain.agents <span class="kw">import</span> create_agent
+
+agent = create_agent(
+    model="anthropic:claude-sonnet-5",
+    tools=[lookup_order, search_policy,
+           days_since],
+    system_prompt="You are a support agent.",
+)</div>
+      <p>Back comes a compiled graph you call <b>.invoke()</b> on. And it is <b>system_prompt=</b>, never <b>prompt=</b>.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">04</div>
+      <h2>A tool is<br>a <span class="ac">function</span></h2>
+      <div class="code"><span class="kw">from</span> langchain.tools <span class="kw">import</span> tool
+
+<span class="kw">@tool</span>
+<span class="kw">def</span> lookup_order(order_id: str) -&gt; str:
+    """Look up an order by its ID."""
+    <span class="kw">return</span> "Order 4471: delivered 12 Sept, ₹2,499"</div>
+      <p>The <b>type hint</b> builds the input schema. No hint, no schema, no call.</p>
+      <div class="foot">What it returns arrives as a ToolMessage.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">05</div>
+      <h2>The docstring is<br>the <span class="ac">description</span></h2>
+      <div class="ba">
+        <div class="bad"><span class="lb">vague — never called</span><code>"""Order tool."""</code></div>
+        <div class="good"><span class="lb">specific — called</span><code>"""Look up an order's status, delivery date, item and amount by its ID."""</code></div>
+      </div>
+      <p>That one line is all the model reads before deciding your tool is worth a call.</p>
+      <div class="foot">A tool nobody picks never raises an error.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">06</div>
+      <svg width="290" height="118" viewBox="0 0 290 118" role="img" aria-label="The agent loop: call the model, run the tools it asked for, feed the results back as ToolMessages, and stop when it asks for none">
+        <text x="0" y="9" font-family="Nunito" font-size="8.5" font-weight="800" fill="#A08B79">THE LOOP — ONE TRIP AT A TIME</text>
+        <path d="M210 28 C210 6, 56 6, 56 24" stroke="#B4785B" stroke-width="1.8" fill="none" stroke-dasharray="4 4"/>
+        <path d="M52 20l4 8 4-8z" fill="#B4785B"/>
+        <text x="133" y="25" text-anchor="middle" font-family="JetBrains Mono" font-size="7.5" fill="#B4785B">ToolMessage</text>
+        <rect x="4" y="28" width="104" height="30" rx="9" fill="#B4785B"/>
+        <text x="56" y="47" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#FFF6E9">call the model</text>
+        <rect x="158" y="28" width="104" height="30" rx="9" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.8"/>
+        <text x="210" y="47" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#4A3830">run the tools</text>
+        <path d="M110 43h38" stroke="#E7D8C4" stroke-width="3"/>
+        <path d="M148 39l8 4-8 4z" fill="#E7D8C4"/>
+        <text x="133" y="38" text-anchor="middle" font-family="JetBrains Mono" font-size="7" fill="#A08B79">tool_calls</text>
+        <path d="M56 60v12" stroke="#E7D8C4" stroke-width="3"/>
+        <path d="M52 72l4 8 4-8z" fill="#E7D8C4"/>
+        <text x="66" y="73" font-family="Nunito" font-size="8" font-weight="800" fill="#A08B79">no tool calls</text>
+        <rect x="4" y="82" width="150" height="28" rx="9" fill="#EEF3EA" stroke="#7FA37A" stroke-width="1.8"/>
+        <text x="79" y="100" text-anchor="middle" font-family="Nunito" font-size="9.5" font-weight="800" fill="#3F6B47">the final answer</text>
+        <text x="286" y="100" text-anchor="end" font-family="JetBrains Mono" font-size="7.5" fill="#B4785B">our run: 3 trips</text>
+      </svg>
+      <h2>One trip round<br>the <span class="ac">loop</span></h2>
+      <p>Ask, run what it asked for, feed the results back, ask again. <b>It stops when the model wants no more tools.</b></p>
+    </section>
+
+    <section class="slide">
+      <div class="num">07</div>
+      <h2>Messages are<br>the <span class="ac">state</span></h2>
+      <div class="rows tight">
+        <div class="row"><span class="b">1</span><span class="tx">SystemMessage<s>your system_prompt, once at the top</s></span></div>
+        <div class="row"><span class="b">2</span><span class="tx">HumanMessage<s>the question, exactly as typed</s></span></div>
+        <div class="row"><span class="b">3</span><span class="tx">AIMessage<s>.text — or .tool_calls when it wants one</s></span></div>
+        <div class="row"><span class="b">4</span><span class="tx">ToolMessage<s>what came back, tagged with tool_call_id</s></span></div>
+      </div>
+      <p style="margin-top:8px">In and out: <b>{"messages": [...]}</b></p>
+    </section>
+
+    <section class="slide">
+      <div class="num">08</div>
+      <h2>Memory is a<br><span class="ac">thread_id</span></h2>
+      <div class="code"><span class="kw">from</span> langgraph.checkpoint.memory <span class="kw">import</span> (
+    InMemorySaver)
+agent = create_agent(model=model, tools=tools,
+                     checkpointer=InMemorySaver())
+config = {"configurable":
+          {"thread_id": "customer-4471"}}
+agent.invoke({"messages": [...]}, config)</div>
+      <p>Same thread, and "can I still return it?" knows what <b>it</b> is.</p>
+      <div class="foot">New thread_id, new stranger. SqliteSaver in production.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">09</div>
+      <h2>Middleware,<br>not a <span class="ac">rewrite</span></h2>
+      <div class="code"><span class="kw">from</span> langchain.agents.middleware <span class="kw">import</span> (
+    HumanInTheLoopMiddleware)
+gate = HumanInTheLoopMiddleware(
+    interrupt_on={"issue_refund": {
+        "allowed_decisions": ["approve",
+                              "reject"]}})
+agent = create_agent(model=model, tools=tools,
+                     middleware=[gate])</div>
+      <p>The refund now waits for a human. Redaction and summaries plug in the same way.</p>
+    </section>
+
+    <section class="slide">
+      <div class="num">10</div>
+      <h2>Five things tutorials<br>get <span class="ac">wrong</span></h2>
+      <div class="rows tight">
+        <div class="row"><span class="b x">✕</span><span class="tx"><em>initialize_agent</em> → <i>create_agent</i></span></div>
+        <div class="row"><span class="b x">✕</span><span class="tx"><em>AgentExecutor</em> → <i>create_agent</i></span></div>
+        <div class="row"><span class="b x">✕</span><span class="tx"><em>create_react_agent</em> → <i>create_agent</i></span></div>
+        <div class="row"><span class="b x">✕</span><span class="tx"><em>ConversationBufferMemory</em> → <i>checkpointer</i></span></div>
+        <div class="row"><span class="b x">✕</span><span class="tx"><em>LLMChain</em> → <i>prompt | model | parser</i></span></div>
+      </div>
+      <p style="margin-top:8px">All five still top the search results. Check the import path.</p>
+    </section>
+
+    <section class="slide end">
+      <h2>Write one tool.<br>Mean the docstring.</h2>
+      <p>One function, one honest description, one call to create_agent — and it picks the steps itself. Next drop: streaming the loop live.</p>
+      <div><span class="tag">Follow for daily drops ❀</span></div>
+      <div class="by">Be10x · Eshmith Saideep</div>
+    </section>
+
+  </div>
+  <div class="controls">
+    <button class="nav" id="prev">←</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav" id="next">→</button>
+  </div>
+  <div class="hintline">swipe · arrow keys · tap the dots</div>
+  <div class="pdfrow"><button class="pdfbtn" id="pdf">Save as PDF</button></div>
+  <div class="credit">Be10x · Daily Drop · Eshmith Saideep</div>
+</div>
+<script>
+/* ===== paste your generated cover image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ================================================================= */
+if(HERO_IMAGE){const h=document.getElementById("covart");h.src=HERO_IMAGE;h.hidden=false;}
+const slides=[...document.querySelectorAll('.slide')],dots=document.getElementById('dots'),bar=document.getElementById('bar');
+const prev=document.getElementById('prev'),next=document.getElementById('next');let i=0;
+slides.forEach((_,k)=>{const b=document.createElement('button');b.className='dot'+(k?'':' on');
+  b.onclick=()=>go(k);dots.appendChild(b);});
+function go(k){i=Math.max(0,Math.min(slides.length-1,k));
+  slides.forEach((s,n)=>s.classList.toggle('on',n===i));
+  [...dots.children].forEach((d,n)=>d.classList.toggle('on',n===i));
+  bar.style.width=((i+1)/slides.length*100)+'%';prev.disabled=i===0;next.disabled=i===slides.length-1;}
+prev.onclick=()=>go(i-1);next.onclick=()=>go(i+1);
+addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);});
+let x0=null;const track=document.getElementById('track');
+track.addEventListener('pointerdown',e=>x0=e.clientX);
+track.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;
+  if(Math.abs(dx)>44)go(dx<0?i+1:i-1);x0=null;});
+go(0);
+document.getElementById('pdf').onclick=()=>window.print();
+(function(){const G=['→','↺','{}','⊳','⇄','●'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>

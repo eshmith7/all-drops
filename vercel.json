@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "redirects": [
+    { "source": "/n8n-multiagent-carousel.html",   "destination": "/n8n/carousel/",   "permanent": true },
+    { "source": "/n8n-multiagent-lab.html",        "destination": "/n8n/lab/",        "permanent": true },
+    { "source": "/n8n-multiagent-playground.html", "destination": "/n8n/playground/", "permanent": true },
+    { "source": "/n8n-multiagent-flashcards.html", "destination": "/n8n/flashcards/", "permanent": true },
+    { "source": "/n8n-multiagent-quiz.html",       "destination": "/n8n/quiz/",       "permanent": true }
+  ]
+}

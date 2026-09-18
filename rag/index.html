@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Engineering Drops</title>
+<meta name="description" content="Five daily drops on RAG engineering — chunking, retrieval design, hybrid search, reranking and evaluation.">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--sage:#7FA37A;--rose:#C97B7B;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding-inline:24px}
+
+header{padding-block:74px 40px}
+.kick{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--clay);margin-bottom:16px}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:clamp(2.1rem,6vw,3.1rem);
+  line-height:1.04;letter-spacing:-.02em;text-wrap:balance}
+h1 .ac{color:var(--clay)}
+.sub{margin-top:16px;font-size:1rem;font-weight:600;line-height:1.65;color:#6B5647;max-width:56ch}
+
+/* the failure this week is built around */
+.case{margin-top:34px;padding:22px 24px;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;box-shadow:0 6px 22px rgba(122,90,64,.07)}
+.case .lb{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.q{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.05rem;line-height:1.4;margin-bottom:16px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ch{padding:13px 15px;border-radius:12px;font-size:.82rem;line-height:1.5}
+.ch .rk{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;display:block;margin-bottom:5px}
+.ch.bad{background:#F7EAEA;border-left:4px solid var(--rose)}
+.ch.bad .rk{color:var(--rose)}
+.ch.good{background:#EEF3EA;border-left:4px solid var(--sage)}
+.ch.good .rk{color:var(--sage)}
+.case .cap{margin-top:14px;font-size:.82rem;font-weight:700;color:var(--dim);line-height:1.55}
+
+.stages{margin-top:18px;display:flex;flex-wrap:wrap;gap:7px}
+.stg{font-family:var(--mono);font-size:.63rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 11px;color:var(--clay-deep)}
+.stg.ev{border-style:dashed;color:var(--sage);border-color:#BFD3B9}
+
+.drops{margin-block:44px 12px;display:flex;flex-direction:column;gap:12px}
+.drop{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:20px;
+  padding:20px 22px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--clay);
+  border-radius:0 14px 14px 0;text-decoration:none;color:inherit;
+  transition:transform .16s ease,box-shadow .16s ease,border-left-color .16s ease}
+.drop:hover,.drop:focus-visible{transform:translateX(4px);box-shadow:0 8px 24px rgba(122,90,64,.11);
+  border-left-color:var(--clay-deep)}
+.drop:focus-visible{outline:2px solid var(--clay-deep);outline-offset:3px}
+.day{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1rem;color:var(--clay);
+  letter-spacing:.04em;text-transform:uppercase}
+.day s{display:block;font-family:var(--mono);font-size:.58rem;font-weight:500;letter-spacing:.14em;
+  color:var(--dim);text-decoration:none;margin-top:3px}
+.t{font-family:'Fraunces',Georgia,serif;font-weight:900;font-size:1.12rem;line-height:1.25}
+.d{margin-top:5px;font-size:.86rem;font-weight:600;color:#6B5647;line-height:1.5}
+.go{font-size:1.15rem;color:var(--clay);font-weight:800}
+
+.note{margin-top:30px;padding:16px 20px;border-left:3px solid var(--sage);background:#EEF3EA;
+  border-radius:0 12px 12px 0;font-size:.85rem;font-weight:600;line-height:1.6;color:#3F6B47}
+
+footer{margin-top:52px;padding-block:26px 70px;border-top:1px solid var(--line);
+  font-size:.8rem;font-weight:600;color:var(--dim);line-height:1.75}
+footer b{color:var(--ink);font-weight:800}
+footer .fine{display:block;margin-top:8px;font-size:.74rem;font-style:italic}
+
+@media(max-width:560px){
+  header{padding-block:52px 30px}
+  .pair{grid-template-columns:1fr}
+  .drop{grid-template-columns:1fr auto;gap:12px;padding:17px 18px}
+  .day{grid-column:1/-1}
+  .day s{display:inline;margin-left:8px}
+  .case{padding:18px}
+}
+@media(prefers-reduced-motion:reduce){.drop{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="kick">Be10x · Daily Drop</div>
+    <h1>Your demo works.<br><span class="ac">Your handbook doesn't.</span></h1>
+    <p class="sub">Five drops on RAG engineering — foundations and optimisation in one week.
+      You already know what RAG is. This is why yours returns the wrong paragraph, and the five
+      stages that fix it.</p>
+
+    <div class="case">
+      <div class="lb">One failure, the whole syllabus</div>
+      <div class="q">“How many casual leaves do I get, and do unused ones carry over?”</div>
+      <div class="pair">
+        <div class="ch bad"><span class="rk">Retrieved · rank 1</span>
+          §4.4 <b>Earned Leave</b> — 18 days a year, up to 30 days carried forward.</div>
+        <div class="ch good"><span class="rk">Correct · rank 7</span>
+          §4.2 <b>Casual Leave</b> — 12 days a year, lapsing on 31 December.</div>
+      </div>
+      <p class="cap">The two policies are written in almost identical language, so they sit almost
+        on top of each other in embedding space. The model answers confidently, and wrongly.
+        Everything this week comes out of fixing that one result.</p>
+      <div class="stages">
+        <span class="stg">Index</span><span class="stg">Retrieve</span><span class="stg">Rerank</span>
+        <span class="stg">Generate</span><span class="stg ev">Evaluate</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="drops">
+    <a class="drop" href="carousel/">
+      <div class="day">Mon<s>PDF</s></div>
+      <div><div class="t">Closest is not correct</div>
+        <div class="d">A 12-slide deck across the whole pipeline. Swipe through it, or hit Save as PDF.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="lab/">
+      <div class="day">Tue<s>Hands-on</s></div>
+      <div><div class="t">The retrieval bench</div>
+        <div class="d">Tune six controls until all five golden-set questions pass, then diagnose six real failures.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="playground/">
+      <div class="day">Wed<s>Interactive</s></div>
+      <div><div class="t">Why yours returns the wrong paragraph</div>
+        <div class="d">Six live widgets — watch the right chunk climb from rank 7 to rank 1.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="flashcards/">
+      <div class="day">Thu<s>Flash cards</s></div>
+      <div><div class="t">Twelve ideas between question and answer</div>
+        <div class="d">Chunks, embeddings, BM25, fusion, rerankers, faithfulness. Tap to flip.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+
+    <a class="drop" href="quiz/">
+      <div class="day">Fri<s>Quiz</s></div>
+      <div><div class="t">Ten questions on making retrieval work</div>
+        <div class="d">Foundations and optimisation, with an explanation after every answer.</div></div>
+      <div class="go" aria-hidden="true">→</div>
+    </a>
+  </main>
+
+  <p class="note">This week covers both sessions — <b>Foundations &amp; Retrieval Design</b> and
+    <b>Advanced Pipelines &amp; Optimization</b> — as one arc. Every drop runs the full pipeline,
+    so start on any day; Monday's deck lays down the vocabulary the rest build on.</p>
+
+  <footer>
+    Be10x · Daily Drop — <b>RAG Engineering: Foundations &amp; Retrieval Design · Advanced Pipelines &amp; Optimization</b><br>
+    Built by <b>Eshmith Saideep</b>
+    <span class="fine">Educational material. The company handbook used throughout is a worked
+      example; retrieval scores shown are simulated to illustrate the pipeline, not benchmark results.</span>
+  </footer>
+</div>
+
+</body>
+</html>

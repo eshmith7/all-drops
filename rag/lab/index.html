@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Engineering — Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F8FA;--surface:#FFFFFF;--surface-2:#FBFCFD;--border:#E3E7ED;--border-strong:#D2D8E2;
+  --ink:#101828;--ink-2:#475467;--ink-3:#8A94A6;--accent:#2563EB;--accent-soft:#EFF4FF;
+  --ok:#059669;--ok-soft:#ECFDF3;--err:#DC2626;--err-soft:#FEF3F2;--warn:#D97706;--warn-soft:#FFFAEB;
+  --mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);min-height:100vh;
+  background:linear-gradient(var(--border) 1px,transparent 1px) 0 0/64px 64px,
+    linear-gradient(90deg,var(--border) 1px,transparent 1px) 0 0/64px 64px,var(--bg)}
+body::before{content:"";position:fixed;inset:0;background:var(--bg);opacity:.55;pointer-events:none;z-index:0}
+button{font:inherit;cursor:pointer}
+.topbar{position:sticky;top:0;z-index:60;background:rgba(247,248,250,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.topinner{max-width:1180px;margin:0 auto;padding:14px 22px 0;display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap}
+.brandmark{display:flex;align-items:center;gap:10px;padding-bottom:12px}
+.dotlogo{width:9px;height:9px;border-radius:2px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.brandmark .n{font-weight:700;font-size:.92rem}
+.brandmark .v{font-family:var(--mono);font-size:.66rem;color:var(--ink-3);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.tabs{display:flex;gap:2px;margin-left:auto}
+.tab{border:none;background:none;color:var(--ink-3);font-weight:600;font-size:.83rem;padding:10px 16px 13px;border-bottom:2px solid transparent}
+.tab:hover{color:var(--ink-2)}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .step{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);margin-right:7px}
+.tab.active .step{color:var(--accent)}
+.view{display:none;position:relative;z-index:1}.view.on{display:block}
+.page{max-width:1180px;margin:0 auto;padding:30px 22px 70px}
+.head{margin-bottom:20px;max-width:680px}
+.kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+h1{font-size:1.6rem;font-weight:700;letter-spacing:-.025em;margin-bottom:7px}
+.lede{color:var(--ink-2);font-size:.92rem;line-height:1.6}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.card+.card{margin-top:14px}
+.card-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card-h .t{font-size:.82rem;font-weight:600}
+.card-h .m{font-family:var(--mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.06em}
+.card-b{padding:16px}
+.btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:600;font-size:.82rem}
+.btn:hover{background:#1D2939}
+.btn.sec{background:var(--surface);color:var(--ink-2);border:1px solid var(--border)}
+.bar{display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.reqs{margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--ink-3)}
+.verdict{font-family:var(--mono);font-size:.76rem;padding:11px 14px;border-radius:9px;margin-top:12px;line-height:1.7}
+.verdict.pass{background:var(--ok-soft);color:#046C4E;border:1px solid #A7E8CB}
+.verdict.fail{background:var(--err-soft);color:#B42318;border:1px solid #FCC}
+.leds{display:flex;gap:5px}
+.led{width:8px;height:8px;border-radius:50%;background:var(--border-strong);transition:all .3s}
+.led.on{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft),0 0 9px rgba(5,150,105,.55)}
+
+/* ---------- module 1 ---------- */
+.g1{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media(max-width:900px){.g1{grid-template-columns:minmax(0,1fr)}}
+.ctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:11px 0;border-bottom:1px solid var(--border)}
+.ctl:first-child{padding-top:0}
+.ctl:last-child{border-bottom:none;padding-bottom:0}
+.ctl .cl{min-width:132px;flex:0 0 auto}
+.ctl .cn{font-size:.8rem;font-weight:600;display:block}
+.ctl .ch{font-family:var(--mono);font-size:.64rem;color:var(--ink-3);display:block;margin-top:2px}
+.seg{display:flex;flex-wrap:wrap;gap:5px;margin-left:auto}
+.opt{font-family:var(--mono);font-size:.71rem;background:var(--surface-2);color:var(--ink-2);
+  border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;white-space:nowrap}
+.opt:hover{border-color:var(--border-strong);color:var(--ink)}
+.opt.on{background:var(--accent-soft);border-color:var(--accent);color:#1E3A8A;font-weight:700}
+.meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
+.meter{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 15px}
+.meter .mt{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.meter .mv{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.meter .ms{font-family:var(--mono);font-size:.66rem;color:var(--ink-3)}
+.mbar{height:6px;border-radius:3px;background:var(--border);margin-top:9px;overflow:hidden}
+.mfill{height:100%;border-radius:3px;background:var(--accent);transition:width .35s ease}
+.mfill.good{background:var(--ok)}.mfill.bad{background:var(--err)}.mfill.mid{background:var(--warn)}
+.qlist{display:grid;gap:9px}
+.qitem{border:1.5px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2)}
+.qitem.p{border-color:#A7E8CB;background:var(--ok-soft)}
+.qitem.f{border-color:#FCC;background:var(--err-soft)}
+.qrow{width:100%;display:flex;gap:11px;align-items:flex-start;text-align:left;background:none;border:none;padding:12px 14px}
+.qv{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.09em;padding:3px 7px;border-radius:5px;flex:0 0 auto;margin-top:1px}
+.qv.pass{background:var(--ok);color:#fff}
+.qv.fail{background:var(--err);color:#fff}
+.qmain{flex:1 1 180px;min-width:0}
+.qq{display:block;font-size:.85rem;font-weight:600;line-height:1.4}
+.qd{display:block;font-family:var(--mono);font-size:.68rem;color:var(--ink-2);line-height:1.6;margin-top:4px;word-break:break-word}
+.qd b{color:var(--ink)}
+.qmeta{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.qk{font-family:var(--mono);font-size:.6rem;letter-spacing:.07em;color:var(--ink-3);border:1px solid var(--border-strong);border-radius:5px;padding:2px 6px;background:var(--surface);white-space:nowrap}
+.qtog{font-family:var(--mono);font-size:.62rem;color:var(--accent)}
+.qlog{display:none;border-top:1px solid var(--border);background:var(--surface);padding:12px 14px}
+.qlog.on{display:block}
+.logwrap{overflow-x:auto;border:1px solid var(--border);border-radius:9px}
+table.rl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.68rem;min-width:470px}
+table.rl th{text-align:left;background:var(--surface-2);color:var(--ink-3);font-weight:500;padding:7px 9px;
+  border-bottom:1px solid var(--border);letter-spacing:.04em;white-space:nowrap}
+table.rl td{padding:7px 9px;border-bottom:1px solid var(--border);color:var(--ink-2);white-space:nowrap}
+table.rl tr:last-child td{border-bottom:none}
+table.rl tr.gold td{background:var(--ok-soft);color:#046C4E;font-weight:700}
+table.rl tr.dec td{background:var(--err-soft);color:#B42318}
+table.rl tr.dim td{color:var(--ink-3)}
+.tg{font-size:.6rem;letter-spacing:.06em;border-radius:4px;padding:1px 5px;border:1px solid currentColor}
+.logn{font-family:var(--mono);font-size:.68rem;color:var(--ink-2);line-height:1.7;margin-top:9px}
+.logn .ct{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{display:inline-block;font-family:var(--mono);font-size:.63rem;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:6px;padding:4px 8px;color:var(--ink-2)}
+.idx{font-family:var(--mono);font-size:.68rem;color:var(--ink-2);line-height:1.5}
+.idx .ir{display:flex;gap:8px;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)}
+.idx .ir:last-child{border-bottom:none}
+.idx .ir.off{opacity:.35;text-decoration:line-through}
+.idx .ir.cut{color:var(--warn)}
+.idx .iy{color:var(--ink-3);flex:0 0 auto}
+.note{font-size:.79rem;color:var(--ink-2);line-height:1.65}
+.note b{color:var(--ink)}
+.note .r{padding:7px 0;border-bottom:1px solid var(--border)}
+.note .r:last-child{border-bottom:none}
+
+/* ---------- module 2 ---------- */
+.g2{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+@media(max-width:900px){.g2{grid-template-columns:minmax(0,1fr)}}
+.brief2{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;
+  padding:13px 15px;margin-bottom:14px}
+.brief2 .lb{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);display:block;margin-bottom:5px}
+.brief2 .tx{font-size:.95rem;font-weight:600;color:#7A4A05;line-height:1.5}
+.sym{border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:14px;overflow:hidden}
+.sym .sh{font-family:var(--mono);font-size:.63rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  padding:9px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.sym .sb{padding:13px 14px;font-family:var(--mono);font-size:.71rem;line-height:1.75;color:var(--ink-2)}
+.sym .ql{color:var(--ink-3)}
+.sym .an{color:#B42318;background:var(--err-soft);border-left:3px solid var(--err);
+  padding:8px 11px;border-radius:0 6px 6px 0;margin:7px 0 10px;display:block}
+.sym .rt{display:flex;gap:8px;padding:3px 0;flex-wrap:wrap}
+.sym .rn{color:var(--ink-3);flex:0 0 auto}
+.sym .rid{color:var(--ink);word-break:break-all}
+.sym .rs{color:var(--ink-3);margin-left:auto}
+.sym .mr{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.sym .mr:last-child{border-bottom:none}
+.sym .bad{color:var(--err);font-weight:700}
+.sym .gd{color:var(--ok);font-weight:700}
+.sym .cq{display:block;font-style:normal;color:var(--ink);font-size:.78rem;line-height:1.7}
+.sym .cw{color:var(--ink-3);display:block;margin-top:7px}
+.acts{display:grid;gap:9px}
+.act{text-align:left;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:13px 15px;color:var(--ink)}
+.act .h{font-size:.87rem;font-weight:600;margin-bottom:2px;color:var(--ink)}
+.act .d{font-size:.75rem;color:var(--ink-3);line-height:1.45}
+.act:hover:not(:disabled){border-color:var(--accent);box-shadow:0 2px 10px rgba(16,24,40,.07)}
+.act:disabled{cursor:default;opacity:1}
+.act.right{border-color:var(--ok);background:var(--ok-soft)}
+.act.wrongpick{border-color:var(--err);background:var(--err-soft)}
+.chg{font-family:var(--mono);font-size:.71rem;color:var(--ink-2);line-height:1.9}
+.chg .rowl{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--border);padding:5px 0;flex-wrap:wrap}
+.chg .rowl:last-child{border-bottom:none}
+.chg .bad2{color:var(--err)}.chg .good2{color:var(--ok)}
+.chg .lb2{flex:1 1 auto;min-width:0}
+.chg .vv{flex:0 0 auto;font-weight:700}
+footer{border-top:1px solid var(--border);position:relative;z-index:1}
+.fin{max-width:1180px;margin:0 auto;padding:20px 22px 34px;display:flex;gap:14px;flex-wrap:wrap;
+  align-items:center;font-family:var(--mono);font-size:.7rem;color:var(--ink-3)}
+.fin b{color:var(--ink-2);font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="topinner">
+  <div class="brandmark"><span class="dotlogo"></span><span class="n">RAG Engineering Lab</span><span class="v">v1.0</span></div>
+  <div class="tabs">
+    <button class="tab active" data-v="v1"><span class="step">01</span>The retrieval bench</button>
+    <button class="tab" data-v="v2"><span class="step">02</span>The retrieval call</button>
+  </div>
+</div></div>
+
+<!-- ============ MODULE 1 ============ -->
+<section class="view on" id="v1">
+  <div class="page">
+    <div class="head">
+      <div class="kicker">Module 01 · Index → Retrieve → Rerank → Generate</div>
+      <h1>The retrieval bench</h1>
+      <p class="lede">One HR handbook, thirteen chunks, five questions with known correct sources — a golden set. The pipeline below is set to naive defaults and it answers <b>none</b> of them correctly. Turn the knobs until all five pass. Each question is broken by a different thing.</p>
+    </div>
+    <div class="g1">
+      <div>
+        <div class="card">
+          <div class="card-h"><span class="t">Pipeline controls</span><span class="m" id="cfgline">—</span></div>
+          <div class="card-b" id="ctls"></div>
+        </div>
+
+        <div class="meters">
+          <div class="meter">
+            <div class="mt" id="rlab">RECALL@5</div>
+            <div class="mv" id="rval">—</div>
+            <div class="ms" id="rsub">is the right chunk even there?</div>
+            <div class="mbar"><div class="mfill" id="rfill" style="width:0%"></div></div>
+          </div>
+          <div class="meter">
+            <div class="mt">FAITHFULNESS</div>
+            <div class="mv" id="fval">—</div>
+            <div class="ms" id="fsub">did the answer actually use it?</div>
+            <div class="mbar"><div class="mfill" id="ffill" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="card-h"><span class="t">Golden set · 5 questions</span><span class="m">TAP A ROW FOR THE RETRIEVAL LOG</span></div>
+          <div class="card-b"><div class="qlist" id="qlist"></div></div>
+        </div>
+
+        <div class="verdict" id="v1v" style="display:none"></div>
+        <div class="bar">
+          <button class="btn sec" id="reset1">Reset to naive</button>
+          <span class="leds" id="leds1" style="margin-left:4px"></span>
+          <span class="reqs" id="score1">0 of 5 passing</span>
+        </div>
+      </div>
+
+      <aside>
+        <div class="card">
+          <div class="card-h"><span class="t">The pipeline</span><span class="m">LIVE</span></div>
+          <div class="card-b" id="pipebox"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="t">The index</span><span class="m" id="idxcount">—</span></div>
+          <div class="card-b"><div class="idx" id="idxlist"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="t">How to read it</span><span class="m">REFERENCE</span></div>
+          <div class="card-b"><div class="note">
+            <div class="r"><b>recall@k</b> — of the five questions, how many had the correct chunk inside the top-k.</div>
+            <div class="r"><b>faithfulness</b> — how many answers were actually grounded in that chunk. Recall can be perfect while this is zero.</div>
+            <div class="r"><b>RRF</b> — fuses the dense and BM25 rankings by rank, not score: Σ 1/(60 + rank). k=60 is the near-universal default.</div>
+            <div class="r"><b>lost in the middle</b> — Liu et al., 2023. Models read the start and the end of a long context and miss what sits between. Bigger windows did not fix it.</div>
+          </div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MODULE 2 ============ -->
+<section class="view" id="v2">
+  <div class="page">
+    <div class="head">
+      <div class="kicker">Module 02 · Diagnosis</div>
+      <h1>The retrieval call</h1>
+      <p class="lede">Six RAG systems in production, six complaints. You get the symptom — a wrong answer, a dashboard, a user on Slack. Name the fix. Every one of these is found by reading the retrieval log, not by swapping the model.</p>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="brief2"><span class="lb">Ticket <span id="tno"></span></span><span class="tx" id="ttx"></span></div>
+        <div class="sym" id="sym"><div class="sh" id="symh"></div><div class="sb" id="symb"></div></div>
+        <div class="acts" id="acts"></div>
+        <div class="verdict" id="v2v" style="display:none"></div>
+        <div class="bar">
+          <button class="btn" id="nextD" style="display:none">Next ticket →</button>
+          <button class="btn sec" id="reset2">Start over</button>
+          <span class="leds" id="dleds" style="margin-left:4px"></span>
+          <span class="reqs" id="dno"></span>
+        </div>
+      </div>
+      <aside class="card">
+        <div class="card-h"><span class="t">What this changes</span><span class="m" id="stage2">—</span></div>
+        <div class="card-b"><div class="chg" id="chg"><span style="color:var(--ink-3)">Make the call to see it…</span></div></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<footer><div class="fin">
+  <span><b>RAG Engineering Lab</b> · Be10x Daily Drop · Foundations &amp; Retrieval Design + Advanced Pipelines &amp; Optimization</span>
+  <span style="margin-left:auto">Built by <b>Eshmith Saideep</b></span>
+</div></footer>
+
+<script>
+document.querySelectorAll('.tab').forEach(t=>{t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  t.classList.add('active');document.getElementById(t.dataset.v).classList.add('on');};});
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ================= SIMULATED CORPUS ================= */
+const CH={
+cl25:{id:'LEAVE-4.1-25',policy:'Leave',year:2025,section:'4.1 Casual leave',
+ text:'Section 4.1 — Casual Leave. Every confirmed employee is credited 12 days of casual leave per calendar year, credited in full on 1 January. Casual leave is meant for short, unplanned absences and may be taken in half-day units. Carry-forward treatment for each leave type is set out in Annexure B.'},
+el25:{id:'LEAVE-4.2-25',policy:'Leave',year:2025,section:'4.2 Earned leave',
+ text:'Section 4.2 — Earned Leave. Every confirmed employee is credited 18 days of earned leave per calendar year, accrued at 1.5 days per completed month. Up to 30 days of unused earned leave may be carried forward into the next calendar year. Carry-forward treatment for each leave type is set out in Annexure B.'},
+sick25:{id:'LEAVE-4.3-25',policy:'Leave',year:2025,section:'4.3 Sick leave',
+ text:'Section 4.3 — Sick Leave. Employees are credited 8 days of sick leave per calendar year. Any absence longer than two consecutive days requires a medical certificate.'},
+cl23:{id:'LEAVE-4.1-23',policy:'Leave',year:2023,section:'4.1 Casual leave (2023 edition)',
+ text:'Section 4.1 — Casual Leave (2023 edition). Every confirmed employee is credited 10 days of casual leave per calendar year, credited in full on 1 January. Casual leave is meant for short, unplanned absences.'},
+tblFull:{id:'LEAVE-ANXB-25',policy:'Leave',year:2025,section:'Annexure B · carry-forward table',
+ text:'Annexure B — Carry-forward table.  | Leave type | Days credited | Carried forward | Cap |  | Casual leave | 12 | No — lapses on 31 December | — |  | Earned leave | 18 | Yes | 30 days |  | Sick leave | 8 | Yes | 8 days |'},
+tblA:{id:'LEAVE-ANXB-25-a',policy:'Leave',year:2025,section:'Annexure B · table, part 1',
+ text:'Annexure B — Carry-forward table.  | Leave type | Days credited | Carried forward | Cap |  | Casual leave | 12 |'},
+tblB:{id:'LEAVE-ANXB-25-b',policy:'Leave',year:2025,section:'Annexure B · table, part 2',
+ text:'No — lapses on 31 December | — |  | Earned leave | 18 | Yes | 30 days |  | Sick leave | 8 | Yes | 8 days |'},
+applyLeave:{id:'LEAVE-4.6-25',policy:'Leave',year:2025,section:'4.6 Applying for leave',
+ text:'Section 4.6 — Applying for leave. All leave is applied for on the HR portal at least three working days in advance, except sick leave, which may be applied for on return.'},
+lta:{id:'REIMB-7.3-25',policy:'Reimbursement',year:2025,section:'7.3 Leave travel allowance',
+ text:'Section 7.3 — Leave Travel Allowance. Travel for the employee and immediate family is reimbursed twice in a block of four calendar years. Submit Form T-4 with tickets and boarding passes within 60 days of travel; finance settles it with the following month’s payroll.'},
+ltaA:{id:'REIMB-7.3-25-a',policy:'Reimbursement',year:2025,section:'7.3 LTA, part 1',
+ text:'Section 7.3 — Leave Travel Allowance. Travel for the employee and immediate family is reimbursed twice in a block of four calendar years. Submit Form T-4 with tickets and'},
+ltaB:{id:'REIMB-7.3-25-b',policy:'Reimbursement',year:2025,section:'7.3 LTA, part 2',
+ text:'boarding passes within 60 days of travel; finance settles it with the following month’s payroll.'},
+ltaElig:{id:'REIMB-7.2-25',policy:'Reimbursement',year:2025,section:'7.2 LTA eligibility',
+ text:'Section 7.2 — LTA eligibility. LTA is available to employees at Grade M3 and above who have completed one year of service. LTA is not available to interns, or to employees serving notice.'},
+reimb:{id:'REIMB-7.1-25',policy:'Reimbursement',year:2025,section:'7.1 Expense reimbursement',
+ text:'Section 7.1 — Expense reimbursement. Claims for travel, internet and client entertainment must be submitted within 30 days of the expense, with a GST invoice. Any claim above \u20B95,000 needs the reporting manager\u2019s approval. Claims raised after 30 days lapse.'},
+noticeConf:{id:'EMP-9.1-25',policy:'Employment',year:2025,section:'9.1 Notice period, confirmed',
+ text:'Section 9.1 — Notice period, confirmed employees. A confirmed employee who resigns must serve 60 days of notice. The company may waive part of the notice period at its discretion.'},
+noticeProb:{id:'EMP-9.2-25',policy:'Employment',year:2025,section:'9.2 Notice period, probation',
+ text:'Section 9.2 — Notice period during probation. An employee who has not yet been confirmed serves 15 days of notice on either side. No notice buy-out is permitted during probation.'},
+probation:{id:'EMP-2.4-25',policy:'Employment',year:2025,section:'2.4 Probation and confirmation',
+ text:'Section 2.4 — Probation and confirmation. New employees are on probation for six months from the date of joining. Confirmation follows a written review by the reporting manager.'},
+coc:{id:'COND-11.1-25',policy:'Conduct',year:2025,section:'11.1 Code of conduct',
+ text:'Section 11.1 — Code of conduct. Employees must declare any outside directorship or consulting engagement in writing before accepting it.'}
+};
+const SETS={
+ struct:['cl25','el25','sick25','cl23','tblFull','applyLeave','lta','ltaElig','reimb','noticeConf','noticeProb','probation','coc'],
+ f512:['cl25','el25','sick25','cl23','tblA','tblB','applyLeave','lta','ltaElig','reimb','noticeConf','noticeProb','probation','coc'],
+ f256:['cl25','el25','sick25','cl23','tblA','tblB','applyLeave','ltaA','ltaB','ltaElig','reimb','noticeConf','noticeProb','probation','coc']
+};
+const SPLITNOTE={struct:[],f512:['tblA','tblB'],f256:['tblA','tblB','ltaA','ltaB']};
+/* hand-tuned [dense cosine, bm25, cross-encoder] per question — deterministic, no randomness */
+const SC={
+q1:{cl25:[.829,18.4,.731],el25:[.841,6.3,.742],sick25:[.771,5.9,.404],cl23:[.836,17.9,.727],
+    tblFull:[.792,11.2,.611],tblA:[.781,10.8,.585],tblB:[.744,4.1,.402],applyLeave:[.748,5.2,.381],
+    lta:[.489,0,.118],ltaA:[.486,0,.115],ltaB:[.470,0,.107],ltaElig:[.522,0,.131],reimb:[.497,0,.124],
+    noticeConf:[.544,0,.092],noticeProb:[.551,0,.097],probation:[.592,0,.121],coc:[.431,0,.061]},
+q2:{tblFull:[.805,15.6,.883],tblA:[.776,11.7,.612],tblB:[.758,7.4,.597],el25:[.812,9.8,.704],
+    cl25:[.793,13.9,.681],cl23:[.781,13.2,.669],sick25:[.702,4.2,.311],applyLeave:[.664,3.6,.268],
+    probation:[.501,0,.112],noticeProb:[.466,0,.094],noticeConf:[.459,0,.091],ltaElig:[.437,0,.086],
+    reimb:[.424,0,.082],lta:[.418,0,.079],ltaA:[.414,0,.077],ltaB:[.402,0,.071],coc:[.372,0,.054]},
+q3:{cl25:[.858,19.1,.751],cl23:[.871,19.6,.758],el25:[.824,6.1,.694],tblFull:[.786,10.4,.602],
+    tblA:[.771,10.1,.589],tblB:[.722,3.8,.411],sick25:[.741,5.6,.392],applyLeave:[.713,4.9,.361],
+    probation:[.554,0,.108],noticeProb:[.512,0,.089],noticeConf:[.506,0,.087],ltaElig:[.478,0,.082],
+    reimb:[.462,0,.078],lta:[.451,0,.074],ltaA:[.448,0,.072],ltaB:[.434,0,.066],coc:[.398,0,.051]},
+q4:{lta:[.631,2.4,.912],ltaA:[.628,2.2,.604],ltaB:[.602,1.6,.588],ltaElig:[.822,14.2,.648],
+    reimb:[.806,12.8,.571],applyLeave:[.741,6.7,.402],el25:[.689,4.8,.188],cl25:[.672,4.1,.174],
+    tblFull:[.651,3.2,.152],tblA:[.642,3.0,.148],tblB:[.611,1.8,.136],sick25:[.638,3.9,.141],
+    cl23:[.398,2.1,.088],noticeConf:[.486,0,.081],noticeProb:[.478,0,.077],probation:[.512,0,.096],coc:[.401,0,.052]},
+q5:{noticeProb:[.818,16.8,.782],noticeConf:[.847,13.4,.812],probation:[.831,11.2,.801],coc:[.612,2.1,.301],
+    applyLeave:[.571,1.4,.244],el25:[.548,0,.131],cl25:[.541,0,.126],cl23:[.529,0,.121],sick25:[.522,0,.118],
+    tblFull:[.498,0,.104],tblA:[.491,0,.101],tblB:[.477,0,.096],reimb:[.441,0,.092],ltaElig:[.424,0,.081],
+    lta:[.411,0,.074],ltaA:[.408,0,.072],ltaB:[.396,0,.068]}
+};
+const BADDEF={
+ nochunk:'The answer does not exist as a retrievable unit, so nothing downstream can recover it. <b>Fix it at index time.</b>',
+ miss:'<b>Retrieve wide, then narrow.</b> A reranker can only reorder what retrieval handed it.',
+ trimmed:'The context window is doing the cutting. <b>Rerank before you trim</b>, so the top 3 are the right 3.',
+ decoy:'A near-identical chunk took the top slot. Separate them lexically with BM25, by metadata, or with a cross-encoder.',
+ middle:'<b>Lost in the middle</b> \u2014 Liu et al., 2023. Retrieve fewer, better chunks and put the strongest first.'};
+const QS=[
+ {id:'q1',q:'How many casual leaves do I get?',gold:'cl25',decoys:['el25','cl23'],
+  topic:['cl25','el25','cl23','tblFull','tblA','tblB'],
+  ok:'Answers <b>12 days</b> from \u00a74.1. BM25 ranked the exact phrase "casual leave" first, RRF kept it there, and the reranker agreed.',
+  bad:{decoy:'Dense scores earned leave .841 against casual leave .829. <b>Embeddings measure similarity, not correctness</b>, and these two paragraphs are written in almost the same words. BM25 does not care about meaning \u2014 it cares that the string matched.'}},
+ {id:'q2',q:'Do unused casual leaves carry over?',gold:'tblFull',decoys:['el25','tblB'],
+  topic:['tblFull','tblA','tblB','el25','cl25','cl23'],
+  ok:'Answers <b>no, they lapse on 31 December</b>, from the intact Annexure B table. \u00a74.1 never states the rule \u2014 it points at the table.',
+  bad:{nochunk:'<b>Chunking decides what is answerable.</b> Fixed-size splitting cut the casual-leave row in half: one chunk keeps the label, the next keeps the answer. No retriever and no reranker can repair a chunk boundary.',
+       decoy:'The earned-leave paragraph states a carry-forward rule in nearly the same words, so it takes the top slot and the model answers from it. The table row that actually answers the question has to rank above it.'}},
+ {id:'q3',q:'What is the casual leave allowance this year?',gold:'cl25',decoys:['cl23'],
+  topic:['cl25','cl23','el25','tblFull','tblA','tblB'],
+  ok:'Answers <b>12 days</b>. The 2023 edition never entered the candidate pool, so nothing had to out-rank it.',
+  bad:{decoy:'The 2023 edition says 10 days and reads almost identically, so it wins on dense <i>and</i> on BM25. Which edition is current is not a question about meaning. <b>A metadata filter fixes this, not a better embedding.</b>'}},
+ {id:'q4',q:'How do I claim LTA?',gold:'lta',decoys:['ltaElig'],
+  topic:['lta','ltaA','ltaB','ltaElig','reimb'],
+  ok:'Answers <b>Form T-4 within 60 days</b>. The chunk came back at rank 8 and the <b>cross-encoder</b> lifted it to rank 1 \u2014 roughly 80\u2013150 ms for chunks this size.',
+  bad:{miss:'\u00a77.3 spells out "Leave Travel Allowance" and never uses the acronym, so both retrievers rank the eligibility and expense sections above it. <b>Retrieve wide</b> \u2014 a reranker only ever sees what retrieval handed it.',
+       trimmed:'<b>Retrieve wide, then rerank.</b> A cross-encoder reads the query and the chunk together, so it judges far better than a vector distance \u2014 and rank 8 never survives a 3-chunk prompt without it.',
+       nochunk:'fixed-256 cut \u00a77.3 in two: the form number sits in one chunk and the deadline in the next. Smaller chunks are not automatically better chunks.'}},
+ {id:'q5',q:'What notice period applies during probation?',gold:'noticeProb',decoys:[],
+  topic:['noticeProb','noticeConf'],
+  ok:'Answers <b>15 days</b>. Three chunks in the prompt: the model reads all three, sees \u00a79.1 is scoped to confirmed employees, and uses \u00a79.2.',
+  bad:{middle:'Retrieved, in the prompt, and never read. <b>Lost in the middle</b> \u2014 Liu et al., 2023. The model answered 60 days from \u00a79.1, which it did read. Bigger context windows have not fixed this.',
+       miss:'It never reached the prompt at all \u2014 a top-k problem before it is a context problem.'}}
+];
+
+/* ================= RETRIEVAL ENGINE ================= */
+function run(Q,cfg){
+  const S=SC[Q.id],g=(c,i)=>S[c]?S[c][i]:0;
+  let pool=SETS[cfg.chunk].slice();
+  if(cfg.year==='y2025')pool=pool.filter(c=>CH[c].year===2025);
+  const dense=pool.slice().sort((a,b)=>g(b,0)-g(a,0)||(a<b?-1:1));
+  const dR={};dense.forEach((c,i)=>dR[c]=i+1);
+  let order=dense,bR={};
+  if(cfg.bm25){
+    const bl=pool.filter(c=>g(c,1)>0).sort((a,b)=>g(b,1)-g(a,1)||(a<b?-1:1));
+    bl.forEach((c,i)=>bR[c]=i+1);
+    const f=c=>(dR[c]?1/(60+dR[c]):0)+(bR[c]?1/(60+bR[c]):0);
+    order=pool.slice().sort((a,b)=>f(b)-f(a)||g(b,0)-g(a,0)||(a<b?-1:1));
+  }
+  const retrieved=order.slice(0,cfg.k);
+  let ranked=retrieved;
+  if(cfg.rerank)ranked=retrieved.map((c,i)=>({c,i,b:Math.round(g(c,2)*50)}))
+    .sort((x,y)=>y.b-x.b||x.i-y.i).map(o=>o.c);
+  const ctx=cfg.ctx==='top3'?ranked.slice(0,3):ranked;
+  const n=ctx.length,readable=i=>n<=4?true:(i<2||i===n-1);
+  const inPool=pool.indexOf(Q.gold)>-1,inRet=retrieved.indexOf(Q.gold)>-1;
+  const gi=ctx.indexOf(Q.gold),rank=ranked.indexOf(Q.gold)+1,fullRank=order.indexOf(Q.gold)+1;
+  let pass=false,mode,src=null;
+  if(!inPool)mode='nochunk';
+  else if(!inRet)mode='miss';
+  else if(gi<0)mode='trimmed';
+  else{
+    let d=null;
+    for(let i=0;i<gi;i++)if(Q.decoys.indexOf(ctx[i])>-1&&readable(i)){d=ctx[i];break;}
+    if(d){mode='decoy';src=d;}
+    else if(!readable(gi)){mode='middle';
+      for(let i=0;i<n;i++)if(readable(i)&&Q.topic.indexOf(ctx[i])>-1){src=ctx[i];break;}}
+    else{pass=true;mode='ok';}
+  }
+  return{pass,mode,src,rank,fullRank,pos:gi+1,retrieved,ranked,ctx,dR,bR,pool,n,order,readable,inRet};
+}
+
+/* ================= MODULE 1 UI ================= */
+const CTLS=[
+ {k:'chunk',n:'Chunk strategy',h:'index · what can be retrieved',
+  o:[['f512','fixed-512'],['f256','fixed-256'],['struct','structure-aware']]},
+ {k:'k',n:'Top-k',h:'retrieve · how wide the net is',
+  o:[[3,'k = 3'],[5,'k = 5'],[10,'k = 10'],[25,'k = 25']]},
+ {k:'bm25',n:'BM25 + RRF',h:'retrieve · lexical, fused at k=60',
+  o:[[false,'off'],[true,'on']]},
+ {k:'rerank',n:'Reranker',h:'rerank · cross-encoder',
+  o:[[false,'off'],[true,'on']]},
+ {k:'year',n:'Year filter',h:'retrieve · metadata',
+  o:[['all','all years'],['y2025','2025 only']]},
+ {k:'ctx',n:'Context sent',h:'generate · what the prompt carries',
+  o:[['all','all retrieved'],['top3','top 3 only']]}
+];
+const NAIVE={chunk:'f512',k:5,bm25:false,rerank:false,year:'all',ctx:'all'};
+const CHUNKLBL={f512:'fixed-512',f256:'fixed-256',struct:'structure-aware'};
+let cfg=Object.assign({},NAIVE),open1=-1;
+const leds1=document.getElementById('leds1');
+QS.forEach(()=>leds1.insertAdjacentHTML('beforeend','<span class="led"></span>'));
+
+function drawCtls(){
+  document.getElementById('ctls').innerHTML=CTLS.map(c=>
+   '<div class="ctl"><span class="cl"><span class="cn">'+c.n+'</span><span class="ch">'+c.h+'</span></span>'+
+   '<span class="seg">'+c.o.map((o,i)=>
+     '<button class="opt'+(String(cfg[c.k])===String(o[0])?' on':'')+'" data-k="'+c.k+'" data-i="'+i+'">'+o[1]+'</button>'
+   ).join('')+'</span></div>').join('');
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const c=CTLS.filter(x=>x.k===b.dataset.k)[0];
+    cfg[c.k]=c.o[+b.dataset.i][0];render();});
+  document.getElementById('cfgline').textContent=
+    CHUNKLBL[cfg.chunk].toUpperCase()+' · K='+cfg.k+' · '+(cfg.bm25?'HYBRID':'DENSE')+
+    (cfg.rerank?' · RERANK':'')+(cfg.year==='y2025'?' · 2025':'')+' · CTX '+(cfg.ctx==='top3'?'3':'ALL');
+}
+
+function pipeSVG(poolN){
+  const st=[['INDEX',CHUNKLBL[cfg.chunk]+' · '+poolN+' chunks',true],
+            ['RETRIEVE',(cfg.bm25?'dense + BM25 · RRF':'dense only')+' · top-'+cfg.k,true],
+            ['RERANK',cfg.rerank?'cross-encoder':'skipped',cfg.rerank],
+            ['GENERATE',(cfg.ctx==='top3'?'top 3 chunks':'all '+cfg.k+' retrieved'),true]];
+  let s='<svg viewBox="0 0 262 192" width="100%" height="192" role="img" aria-label="pipeline">';
+  st.forEach((x,i)=>{const y=i*48;
+    const fill=x[2]?'#EFF4FF':'#FBFCFD',stk=x[2]?'#2563EB':'#E3E7ED',tc=x[2]?'#1E3A8A':'#8A94A6';
+    s+='<rect x="1" y="'+y+'" width="260" height="36" rx="8" fill="'+fill+'" stroke="'+stk+'" stroke-width="1.4"/>'+
+       '<text x="13" y="'+(y+16)+'" font-family="JetBrains Mono" font-size="9.5" font-weight="700" letter-spacing="1.1" fill="'+tc+'">'+x[0]+'</text>'+
+       '<text x="13" y="'+(y+29)+'" font-family="JetBrains Mono" font-size="8.5" fill="'+(x[2]?'#475467':'#8A94A6')+'">'+esc(x[1])+'</text>';
+    if(i<3)s+='<path d="M131 '+(y+36)+' L131 '+(y+46)+'" stroke="#D2D8E2" stroke-width="1.4"/>'+
+              '<path d="M127.5 '+(y+42)+' L131 '+(y+46.5)+' L134.5 '+(y+42)+'" fill="none" stroke="#D2D8E2" stroke-width="1.4"/>';});
+  s+='<text x="131" y="188" text-anchor="middle" font-family="JetBrains Mono" font-size="8" letter-spacing="1.2" fill="#8A94A6">EVALUATE WRAPS ALL FOUR</text></svg>';
+  return s;
+}
+
+function logTable(Q,r){
+  const showN=Math.min(r.ranked.length,8);
+  let rows='';
+  for(let i=0;i<showN;i++){
+    const c=r.ranked[i],S=SC[Q.id][c]||[0,0,0];
+    const isG=c===Q.gold,isD=Q.decoys.indexOf(c)>-1;
+    const inCtx=r.ctx.indexOf(c)>-1,rd=inCtx&&r.readable(r.ctx.indexOf(c));
+    rows+='<tr class="'+(isG?'gold':isD?'dec':(inCtx?'':'dim'))+'">'+
+      '<td>'+(i+1)+'</td>'+
+      '<td>'+esc(CH[c].id)+'</td>'+
+      '<td>'+S[0].toFixed(3)+'</td>'+
+      '<td>'+(cfg.bm25?(S[1]>0?S[1].toFixed(1):'—'):'off')+'</td>'+
+      '<td>'+(cfg.rerank?S[2].toFixed(3):'off')+'</td>'+
+      '<td>'+(isG?'GOLD':isD?'DECOY':'')+'</td>'+
+      '<td>'+(inCtx?(rd?'in prompt':'in prompt · buried'):'cut')+'</td></tr>';
+  }
+  let tail='';
+  if(r.ranked.length>showN)tail='<div class="logn">… '+(r.ranked.length-showN)+' more retrieved chunks below rank 8.</div>';
+  if(!r.inRet)tail+='<div class="logn">Gold chunk '+(r.pool.indexOf(Q.gold)>-1
+    ?'sat at retrieval rank '+r.fullRank+' — outside top-'+cfg.k+'.'
+    :'does not exist under '+CHUNKLBL[cfg.chunk]+' chunking.')+'</div>';
+  tail+='<div class="logn"><span class="ct">prompt</span> = '+r.n+' chunk'+(r.n===1?'':'s')+
+    (r.n>4?' — the model reads positions 1, 2 and '+r.n+' reliably.':' — short enough that the model reads all of them.')+'</div>';
+  return '<div class="logwrap"><table class="rl"><tr><th>#</th><th>chunk</th><th>dense</th><th>bm25</th><th>rerank</th><th>tag</th><th>prompt</th></tr>'+
+    rows+'</table></div>'+tail+
+    '<div class="logn" style="color:var(--ink-3)">gold text · '+esc(CH[Q.gold].text.slice(0,150))+'…</div>';
+}
+
+function diag(Q,r){
+  const B=Q.bad[r.mode]||BADDEF[r.mode]||'';
+  if(r.mode==='ok')return '✓ '+Q.ok;
+  if(r.mode==='nochunk')return '× the answer is not in any chunk. '+B;
+  if(r.mode==='miss')return '× ranked '+r.fullRank+' in retrieval, and top-'+cfg.k+' stopped short. '+B;
+  if(r.mode==='trimmed')return '× retrieved at rank '+r.rank+' of '+r.ranked.length+', then the top-3 context window cut it. '+B;
+  if(r.mode==='decoy')return '× answered from <b>'+esc(CH[r.src].id)+'</b>, which ranked above it at position '+
+    (r.ctx.indexOf(r.src)+1)+'. '+B;
+  if(r.mode==='middle')return '× in the prompt at position '+r.pos+' of '+r.n+', unread. It answered from <b>'+
+    esc(CH[r.src].id)+'</b> instead. '+B;
+  return '×';
+}
+
+function render(){
+  drawCtls();
+  const res=QS.map(Q=>({Q,r:run(Q,cfg)}));
+  const poolN=res[0].r.pool.length;
+  const recall=res.filter(x=>x.r.inRet).length,faith=res.filter(x=>x.r.pass).length;
+
+  document.getElementById('rlab').textContent='RECALL@'+cfg.k;
+  document.getElementById('rval').textContent=Math.round(recall/5*100)+'%';
+  document.getElementById('rsub').textContent=recall+' of 5 golden chunks inside top-'+cfg.k;
+  const rf=document.getElementById('rfill');rf.style.width=(recall/5*100)+'%';
+  rf.className='mfill '+(recall===5?'good':recall>=3?'mid':'bad');
+  document.getElementById('fval').textContent=Math.round(faith/5*100)+'%';
+  document.getElementById('fsub').textContent=faith+' of 5 answers grounded in the right chunk';
+  const ff=document.getElementById('ffill');ff.style.width=(faith/5*100)+'%';
+  ff.className='mfill '+(faith===5?'good':faith>=3?'mid':'bad');
+
+  document.getElementById('qlist').innerHTML=res.map((x,i)=>
+    '<div class="qitem '+(x.r.pass?'p':'f')+'">'+
+      '<button class="qrow" data-i="'+i+'">'+
+        '<span class="qv '+(x.r.pass?'pass':'fail')+'">'+(x.r.pass?'PASS':'FAIL')+'</span>'+
+        '<span class="qmain"><span class="qq">'+(i+1)+' · '+esc(x.Q.q)+'</span>'+
+        '<span class="qd">'+diag(x.Q,x.r)+'</span></span>'+
+        '<span class="qmeta"><span class="qk">rank '+(x.r.rank>0?x.r.rank:'—')+'</span>'+
+        '<span class="qtog">'+(open1===i?'hide log ▴':'log ▾')+'</span></span>'+
+      '</button>'+
+      '<div class="qlog'+(open1===i?' on':'')+'">'+(open1===i?logTable(x.Q,x.r):'')+'</div>'+
+    '</div>').join('');
+  document.querySelectorAll('.qrow').forEach(b=>b.onclick=()=>{
+    open1=(open1===+b.dataset.i)?-1:+b.dataset.i;render();});
+
+  for(let i=0;i<5;i++)leds1.children[i].classList.toggle('on',res[i].r.pass);
+  document.getElementById('score1').textContent=faith+' of 5 passing';
+
+  document.getElementById('pipebox').innerHTML=pipeSVG(poolN);
+  document.getElementById('idxcount').textContent=poolN+' CHUNKS SEARCHED';
+  document.getElementById('idxlist').innerHTML=SETS[cfg.chunk].map(c=>{
+    const off=cfg.year==='y2025'&&CH[c].year!==2025;
+    const cut=SPLITNOTE[cfg.chunk].indexOf(c)>-1;
+    return '<div class="ir'+(off?' off':cut?' cut':'')+'"><span>'+esc(CH[c].id)+'</span>'+
+      '<span class="iy">'+(cut?'split':CH[c].year)+'</span></div>';}).join('');
+
+  const v=document.getElementById('v1v');
+  if(faith===5){
+    v.style.display='block';v.className='verdict pass';
+    v.innerHTML='✓ <b>5 / 5. That is the whole pipeline, and every stage was load-bearing.</b><br><br>'+
+      '01 casual-leave count → <b>BM25 + RRF</b>. The user typed an exact phrase; dense could not separate it from earned leave.<br>'+
+      '02 carry-over → <b>structure-aware chunking</b>. The table row had to survive the split before anything could retrieve it.<br>'+
+      '03 this year&rsquo;s allowance → <b>year metadata filter</b>. The 2023 edition had to leave the pool; no embedding fixes that.<br>'+
+      '04 claiming LTA → <b>cross-encoder rerank over a wide net</b>. Rank 8 to rank 1, at roughly 80–150 ms.<br>'+
+      '05 probation notice → <b>a 3-chunk prompt</b>. It was always retrieved. It was never read.<br><br>'+
+      'Note what you never touched: the generation model. Anthropic reports that contextual embeddings cut retrieval failures 35%, contextual BM25 49%, and adding reranking 67% — every one of those is an index-and-retrieve change.';
+  } else if(recall===5&&faith<5){
+    v.style.display='block';v.className='verdict fail';
+    v.innerHTML='× recall@'+cfg.k+' is <b>100%</b> and only '+faith+' of 5 answers are right. '+
+      'Every correct chunk is in the top-'+cfg.k+' and the system still answers wrongly. '+
+      '<b>This is the most common evaluation mistake in RAG</b> — shipping on retrieval metrics alone. Measure faithfulness too.';
+  } else v.style.display='none';
+}
+document.getElementById('reset1').onclick=()=>{cfg=Object.assign({},NAIVE);open1=-1;render();};
+render();
+
+/* ================= MODULE 2 ================= */
+function symQA(q,a,rows){
+  return '<span class="ql">question</span><br>'+esc(q)+
+   '<span class="an">answer &nbsp;'+esc(a)+'</span>'+
+   '<span class="ql">retrieved</span>'+
+   rows.map(r=>'<span class="rt"><span class="rn">'+r[0]+'</span><span class="rid">'+esc(r[1])+
+     '</span><span class="rs">'+esc(r[2])+'</span></span>').join('');
+}
+function symM(rows){
+  return rows.map(r=>'<span class="mr"><span>'+esc(r[0])+'</span><span class="'+(r[2]||'')+'">'+
+    esc(r[1])+'</span></span>').join('');
+}
+function symC(t,who){return '<span class="cq">“'+esc(t)+'”</span><span class="cw">— '+esc(who)+'</span>';}
+
+const DEC=[
+ {t:'Wrong policy, confident tone',
+  s:'An employee asks the handbook assistant the canonical question. The answer is fluent, cited, and about the wrong leave type.',
+  sh:'retrieval log · dense only, k=5',
+  sb:symQA('How many casual leaves do I get, and do unused ones carry over?',
+    'You receive 18 days per calendar year and may carry forward up to 30 days.',
+    [['1','LEAVE-4.2-25 · earned leave','cos .841'],
+     ['2','LEAVE-4.1-23 · casual leave, 2023','cos .836'],
+     ['3','LEAVE-4.1-25 · casual leave, 2025','cos .829'],
+     ['4','LEAVE-ANXB-25 · carry-forward table','cos .792'],
+     ['5','LEAVE-4.3-25 · sick leave','cos .771']]),
+  acts:[
+   {h:'Add BM25 alongside the vectors, fuse with RRF at k=60',d:'hybrid retrieval',ok:true},
+   {h:'Raise top-k from 5 to 50',d:'cast a wider net',ok:false},
+   {h:'Switch to a bigger embedding model',d:'3072 dimensions instead of 1024',ok:false}],
+  why:'<b>Hybrid retrieval.</b> The user typed an exact phrase — <i>casual leave</i> — and dense retrieval scored the earned-leave paragraph .841 against the casual-leave paragraph .829. Embeddings measure similarity, not correctness, and these two paragraphs are written in nearly the same words. BM25 does not care about meaning; it cares that the string matched. Fuse the two rankings with Reciprocal Rank Fusion — score = Σ 1/(60 + rank) — and you need no score calibration between them. Raising k leaves the wrong chunk at rank 1; a bigger embedding model moves both paragraphs together.',
+  stage:'RETRIEVE',
+  chg:[['dense-only ranking','casual at 3','bad2'],['hybrid + RRF','casual at 1','good2'],
+       ['rare terms, IDs, policy names','now matched','good2'],['fusion constant','k = 60','']]},
+
+ {t:'Right answer, wrong year',
+  s:'The assistant is accurate, consistent and quietly out of date. HR has been correcting it by hand for a month.',
+  sh:'user complaint + index metadata',
+  sb:symC('It keeps telling people 10 casual leaves. The policy changed to 12 in the 2024 revision. It quotes section 4.1 correctly — it just quotes the wrong 4.1.','HR operations')+
+     '<span class="cw" style="margin-top:11px">index scan</span>'+
+     symM([['LEAVE-4.1-25 · section 4.1 · year 2025','indexed',''],
+           ['LEAVE-4.1-23 · section 4.1 · year 2023','still indexed','bad'],
+           ['query-time metadata filter','none','bad']]),
+  acts:[
+   {h:'Filter on year at query time, and drop superseded editions at re-index',d:'metadata, not embeddings',ok:true},
+   {h:'Tell the model in the system prompt to prefer recent documents',d:'instruction-level fix',ok:false},
+   {h:'Raise the similarity threshold so weak matches are dropped',d:'tighter cutoff',ok:false}],
+  why:'<b>Stale index and a missing metadata filter.</b> Two editions of the same section are sitting in the same index, written in nearly the same words, so they score nearly the same. No embedding can tell you which one is current — that is not a meaning problem, it is a bookkeeping problem. Store <i>year</i>, <i>version</i>, <i>policy</i> and <i>source</i> alongside every vector and filter before you search. Telling the model to prefer recent documents fails because the chunk it reads carries no date; a higher threshold drops both editions equally.',
+  stage:'INDEX',
+  chg:[['editions in the pool','2 → 1','good2'],['filter cost','a WHERE clause',''],
+       ['embedding change needed','none','good2'],['also store','version, source, policy','']]},
+
+ {t:'Perfect retrieval, wrong answers',
+  s:'The evaluation suite is green. The users are not. Retrieval has been tuned for three weeks and accuracy has not moved.',
+  sh:'evaluation dashboard · 60-question golden set',
+  sb:symM([['recall@5','100%','gd'],['MRR','0.92','gd'],['context precision','0.88','gd'],
+           ['answer accuracy, human-rated','58%','bad'],['faithfulness','not measured','bad']]),
+  acts:[
+   {h:'Measure faithfulness, and instruct the model to answer only from the context and cite the chunk',d:'evaluate the second half',ok:true},
+   {h:'Raise top-k to 20 so the model has more to work with',d:'more context',ok:false},
+   {h:'Fine-tune the embedding model on the handbook',d:'domain-adapt retrieval',ok:false}],
+  why:'<b>This is a generation failure, not a retrieval failure.</b> The right chunk is in the prompt every single time — recall@5 is 100% — and the model is still wrong, which means it is ignoring the context, contradicting it, or filling gaps from memory. Retrieval metrics only tell you the chunk arrived. Faithfulness — the fraction of claims in the answer supported by the retrieved context — tells you it was used. Ground the instruction: answer only from the supplied context, cite the chunk, and say so when the context does not contain the answer. LLM-as-judge is the practical way to score this; use a different model than the generator and re-anchor it against human ratings. Tuning retrieval harder optimises the half that already works.',
+  stage:'GENERATE + EVALUATE',
+  chg:[['recall@5','already 100%',''],['what was never measured','faithfulness','bad2'],
+       ['prompt change','answer only from context','good2'],['judge model','different from generator','']]},
+
+ {t:'Half a table, half an answer',
+  s:'Anything that lives in a table comes back partly right. Prose questions are fine.',
+  sh:'chunk boundary · fixed-512 splitter',
+  sb:'<span class="ql">chunk LEAVE-ANXB-25-a</span><br>| Leave type | Days credited | Carried forward | Cap |<br>| Casual leave | 12 |'+
+     '<span class="cw" style="color:var(--err)">—— split ——</span>'+
+     '<span class="ql">chunk LEAVE-ANXB-25-b</span><br>No — lapses on 31 December | — |<br>| Earned leave | 18 | Yes | 30 days |'+
+     '<span class="an">answer &nbsp;Casual leave is 12 days. Unused days carry forward up to 30 days.</span>',
+  acts:[
+   {h:'Split on document structure, or index the row and return the whole table as its parent',d:'structure-aware / parent-document',ok:true},
+   {h:'Add 20% overlap between chunks',d:'the traditional boundary fix',ok:false},
+   {h:'Sort the retrieved chunks back into document order before the prompt',d:'restore reading order',ok:false}],
+  why:'<b>The chunk boundary cut the answer in half.</b> A chunk is the unit of what can be retrieved — if the label is in one chunk and the value in the next, no retriever and no reranker can recover it. Split on headings, clauses and table rows instead of a token count, or use parent-document retrieval: embed the small row for precision, return the whole table for context. Overlap is the old reflex and its value is genuinely contested — here it would need to be large enough to duplicate the whole table to help, and it inflates the index either way. Reordering chunks cannot restore text that was never retrieved together.',
+  stage:'INDEX',
+  chg:[['answerable unit','row → whole table','good2'],['fixed-size splitting','cuts structure','bad2'],
+       ['overlap 10–20%','contested, not the fix','bad2'],['stronger option','parent-document','good2']]},
+
+ {t:'It broke on Tuesday',
+  s:'Half the corpus was re-indexed to a newer embedding model on Tuesday morning. Quality fell off a cliff for those documents only.',
+  sh:'retrieval log · after partial re-index',
+  sb:symM([['docs re-indexed Tuesday','6 of 13',''],['embedding model, new docs','v3 · 1536-dim',''],
+           ['embedding model, old docs','v2 · 1024-dim','bad'],
+           ['recall@5, re-indexed docs','0.41','bad'],['recall@5, untouched docs','0.86','gd']]),
+  acts:[
+   {h:'Re-index the entire corpus with one embedding model version and one chunking scheme',d:'one generation, end to end',ok:true},
+   {h:'Roll back to the previous vector store snapshot',d:'undo Tuesday',ok:false},
+   {h:'Add a reranker to compensate for the noisy distances',d:'fix it downstream',ok:false}],
+  why:'<b>A mixed-generation index.</b> Vectors from two different embedding models do not share a coordinate system, so a distance between them is arithmetic without meaning — the nearest neighbour search is comparing measurements taken in different units. The same applies to a change of chunking scheme mid-corpus. Anything re-indexed must be re-indexed with the same model version and the same splitter, and the whole corpus has to move together. A rollback buys time but leaves you on the old model forever; a reranker cannot rescue a candidate list that was assembled from meaningless distances.',
+  stage:'INDEX',
+  chg:[['embedding versions in index','2 → 1','good2'],['chunking schemes in index','must also be 1',''],
+       ['cost','one full re-index','bad2'],['record for next time','model version per chunk','good2']]},
+
+ {t:'Good answers, terrible bill',
+  s:'Quality is finally fine. Finance and the users are both unhappy — every question costs, and every question is slow.',
+  sh:'production telemetry · last 7 days',
+  sb:symM([['chunks sent per question','25',''],['prompt tokens per question','≈ 14,200','bad'],
+           ['p95 answer latency','6.4 s','bad'],['human-rated answer quality','good','gd'],
+           ['questions where the answer sat mid-prompt','1 in 4','bad']]),
+  acts:[
+   {h:'Keep retrieving ~25, rerank them, and send only the top 3',d:'retrieve wide, generate narrow',ok:true},
+   {h:'Drop top-k to 3 and skip the reranker',d:'cheapest possible prompt',ok:false},
+   {h:'Cache answers keyed on the question string',d:'never pay twice',ok:false}],
+  why:'<b>Retrieve wide, then rerank down.</b> Stuffing 25 chunks into the prompt pays for 25 chunks on every question and buys position bias as a free extra — lost in the middle means the model reads the start and end of a long context and misses what sits between, and bigger context windows have not fixed it. A cross-encoder reads the query and the chunk together, so it judges far better than a vector distance; it is too slow to run over the whole corpus, which is exactly why it goes second. Retrieve ~25, rerank, keep ~3 — or ~100 down to ~20 at larger scale — for about 80–150 ms, and the prompt drops most of its tokens. Cutting k to 3 without a reranker just makes you wrong faster, and a question-string cache misses every rephrasing.',
+  stage:'RERANK + GENERATE',
+  chg:[['chunks in prompt','25 → 3','good2'],['reranker latency','+80–150 ms','bad2'],
+       ['lost-in-the-middle exposure','mostly gone','good2'],['typical funnel','25 → 3, or 100 → 20','']],
+  last:true}
+];
+let di=0;
+const dleds=document.getElementById('dleds');
+DEC.forEach(()=>dleds.insertAdjacentHTML('beforeend','<span class="led"></span>'));
+function loadD(){
+  const D=DEC[di];
+  document.getElementById('tno').textContent='#'+(di+1);
+  document.getElementById('ttx').textContent=D.t+' — '+D.s;
+  document.getElementById('symh').textContent=D.sh;
+  document.getElementById('symb').innerHTML=D.sb;
+  document.getElementById('dno').textContent='ticket '+(di+1)+'/'+DEC.length;
+  const el=document.getElementById('acts');el.innerHTML='';
+  D.acts.slice().sort(()=>Math.random()-.5).forEach(a=>{
+    const b=document.createElement('button');b.className='act';b.dataset.ok=a.ok?'1':'0';
+    b.innerHTML='<div class="h">'+esc(a.h)+'</div><div class="d">'+esc(a.d)+'</div>';
+    b.onclick=()=>pick(a,b);el.appendChild(b);});
+  document.getElementById('v2v').style.display='none';
+  document.getElementById('nextD').style.display='none';
+  document.getElementById('stage2').textContent='—';
+  document.getElementById('chg').innerHTML='<span style="color:var(--ink-3)">Make the call to see it…</span>';
+}
+function pick(a,btn){
+  const D=DEC[di];
+  document.querySelectorAll('.act').forEach(x=>{x.disabled=true;
+    if(x.dataset.ok==='1')x.classList.add('right');});
+  if(!a.ok)btn.classList.add('wrongpick');
+  dleds.children[di].classList.toggle('on',a.ok);
+  const v=document.getElementById('v2v');v.style.display='block';
+  v.className='verdict '+(a.ok?'pass':'fail');
+  v.innerHTML=(a.ok?'✓ that is the call. ':'× that would not move it. ')+D.why;
+  document.getElementById('stage2').textContent=D.stage;
+  document.getElementById('chg').innerHTML=D.chg.map(r=>
+    '<div class="rowl"><span class="lb2">'+esc(r[0])+'</span><span class="vv '+(r[2]||'')+'">'+esc(r[1])+'</span></div>').join('');
+  document.getElementById('nextD').style.display=di<DEC.length-1?'inline-block':'none';
+  if(D.last)v.innerHTML+='<br><br>Six failures, six fixes, and not one of them was a better generation model. Every single one was visible in <b>what got retrieved</b> — which is why the golden set and the retrieval log are the two tools a RAG engineer actually lives in.';
+}
+document.getElementById('nextD').onclick=()=>{di++;loadD();};
+document.getElementById('reset2').onclick=()=>{di=0;
+  dleds.querySelectorAll('.led').forEach(l=>l.classList.remove('on'));loadD();};
+loadD();
+</script>
+</body>
+</html>

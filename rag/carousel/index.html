@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG engineering — Carousel</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--sage:#7FA37A;--rose:#C97B7B;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 34px}
+.head{text-align:center;margin-bottom:16px}
+.head .eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+.head h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;margin-top:5px}
+.frame{width:100%;max-width:460px}
+.progress{height:4px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.progress i{display:block;height:100%;background:var(--clay);border-radius:3px;transition:width .4s cubic-bezier(.3,.8,.3,1)}
+.track{position:relative;width:100%;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(122,90,64,.16);touch-action:pan-y}
+.slide{position:absolute;inset:0;background:var(--card);padding:60px 30px 32px;display:flex;flex-direction:column;
+  justify-content:center;opacity:0;transform:translateX(28px) scale(.98);transition:opacity .4s ease,transform .4s ease;pointer-events:none}
+.slide.on{opacity:1;transform:none;pointer-events:auto}
+.slide .num{position:absolute;top:30px;left:30px;font-family:'Fraunces',serif;font-weight:900;font-size:.88rem;color:var(--clay)}
+.slide h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;line-height:1.14;letter-spacing:-.015em;margin-bottom:11px}
+.slide h2 .ac{color:var(--clay)}
+.slide p{font-size:.93rem;line-height:1.6;font-weight:600;color:#6B5647;max-width:32ch}
+.slide p b{color:var(--ink)}
+.slide .foot{margin-top:15px;padding-top:12px;border-top:1.5px dashed var(--line);font-size:.75rem;font-weight:800;color:var(--dim)}
+.slide svg{display:block;margin:0 0 12px;max-width:100%;height:auto}
+.ba{display:grid;gap:9px;margin-bottom:12px}
+.ba div{border-radius:12px;padding:11px 13px;font-size:.83rem;line-height:1.5}
+.ba .bad{background:#F7EAEA;border-left:4px solid var(--rose)}
+.ba .good{background:#EEF3EA;border-left:4px solid var(--sage)}
+.ba .lb{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.ba .bad .lb{color:var(--rose)}.ba .good .lb{color:var(--sage)}
+.ba code{font-family:var(--mono);font-size:.78rem;color:var(--ink)}
+.rows{display:grid;gap:7px;margin-bottom:4px}
+.rows.tight{gap:5px}
+.rows.tight .row{padding:6px 12px}
+.row{display:flex;align-items:center;gap:11px;background:var(--bg);border-radius:11px;padding:9px 12px}
+.row .b{width:24px;height:24px;border-radius:7px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:.76rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.row .b.x{background:var(--rose)}
+.row .tx{font-size:.83rem;font-weight:700;line-height:1.3}
+.row .tx s{display:block;font-size:.71rem;font-weight:700;color:var(--dim);text-decoration:none;margin-top:1px}
+.row .tx em{font-family:var(--mono);font-style:normal;font-weight:500;font-size:.74rem;color:var(--rose);text-decoration:line-through}
+.row .tx i{font-family:var(--mono);font-style:normal;font-weight:500;font-size:.74rem;color:var(--sage)}
+.code{font-family:var(--mono);font-size:clamp(.56rem,2.45vw,.75rem);font-variant-ligatures:none;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:12px 14px;line-height:1.8;margin:2px 0 11px;overflow-x:auto;white-space:pre-wrap}
+.code .kw{color:#E8B583}.code .cm{color:#9A8776}
+.slide.cover{background:var(--clay);color:#FFF6E9;justify-content:center;align-items:flex-start}
+.slide.cover .kick{font-size:.7rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.85;margin-bottom:14px}
+.slide.cover h2{font-size:2.3rem;color:#FFF6E9;margin-bottom:12px}
+.slide.cover p{color:#F6E5D3}
+.slide.cover .swipe{position:absolute;bottom:30px;left:30px;font-size:.8rem;font-weight:800;opacity:.9}
+.covart{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;margin-bottom:16px;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+.covart[hidden]{display:none}
+.slide.end{background:var(--ink);color:#F7EFE2;justify-content:center}
+.slide.end h2{color:#F7EFE2;font-size:1.9rem}
+.slide.end p{color:#D9C8B8}
+.slide.end .tag{display:inline-block;margin-top:16px;background:var(--clay);color:#FFF6E9;font-family:'Fraunces',serif;
+  font-weight:900;font-size:1rem;padding:11px 20px;border-radius:12px}
+.slide.end .by{margin-top:13px;font-size:.7rem;font-weight:800;letter-spacing:.1em;color:#A08B79}
+.controls{display:flex;align-items:center;gap:14px;margin-top:16px;justify-content:center}
+.nav{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--clay);
+  font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.nav:hover:not(:disabled){background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.nav:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;padding:0;cursor:pointer;transition:all .25s}
+.dot.on{background:var(--clay);width:22px;border-radius:5px}
+.hintline{margin-top:12px;text-align:center;font-size:.7rem;font-weight:700;color:var(--dim);letter-spacing:.06em}
+.pdfrow{margin-top:10px;text-align:center}
+.pdfbtn{font-family:'Nunito',system-ui,sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 15px;cursor:pointer;transition:all .15s}
+.pdfbtn:hover{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.credit{margin-top:10px;text-align:center;font-size:.66rem;font-weight:700;color:var(--dim);letter-spacing:.08em}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(122,90,64,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:var(--card);border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.81rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.72rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-clay .in{background:var(--clay);color:#FFF6E9}
+.t-sage .in{background:var(--sage);color:#F4F8F1}
+.t-ink .in{background:var(--ink);color:#F7EFE2}
+.t-cream .in{background:var(--card);color:var(--clay-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+@media(max-width:492px){
+  body{padding:18px 12px 28px}
+  .head h1{font-size:1.3rem}
+  .slide{padding:44px 18px 22px}
+  .slide .num{top:20px;left:18px;font-size:.8rem}
+  .slide h2{font-size:1.36rem;margin-bottom:9px}
+  .slide p{font-size:.82rem;line-height:1.5}
+  .slide .foot{margin-top:11px;padding-top:9px;font-size:.68rem}
+  .slide.cover h2{font-size:1.85rem}
+  .slide.cover .kick{margin-bottom:10px}
+  .slide.cover .swipe{bottom:22px;left:18px}
+  .slide.end h2{font-size:1.5rem}
+  .slide.end .tag{font-size:.9rem;padding:9px 16px;margin-top:12px}
+  .rows{gap:6px}
+  .row{padding:6px 10px;gap:9px}
+  .rows.tight .row{padding:4px 10px}
+  .row .b{width:20px;height:20px;font-size:.68rem}
+  .row .tx{font-size:.78rem}
+  .row .tx s{font-size:.66rem}
+  .row .tx em,.row .tx i{font-size:.67rem}
+  .ba{gap:7px;margin-bottom:10px}
+  .ba div{padding:8px 10px;font-size:.74rem}
+  .ba code{font-size:.74rem}
+  .code{padding:10px 12px;line-height:1.62;margin:2px 0 9px}
+}
+body,button,.dot,.nav{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Cpath d='M3 9h18M9 9v11M15 9v11' stroke='%23B4785B' stroke-width='1.6'/%3E%3C/svg%3E") 4 3, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--clay);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.slide{transition:none}.sticker .in{animation:none}}
+@media print{
+  @page{margin:12mm}
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  body{background:#fff;display:block;min-height:0;padding:0;cursor:auto}
+  .sticker,.trail,.controls,.dots,.nav,.progress,.hintline,.pdfrow{display:none !important}
+  .head{margin:0 0 7mm}
+  .frame{max-width:170mm;width:100%;margin:0 auto}
+  .track{position:static;display:block;width:100%;height:auto;aspect-ratio:auto;
+    overflow:visible;border-radius:0;box-shadow:none;touch-action:auto}
+  .slide{position:relative;inset:auto;width:100%;aspect-ratio:1/1;margin:0 auto;
+    opacity:1 !important;transform:none !important;pointer-events:auto;transition:none;
+    border:1px solid var(--line);border-radius:20px;
+    page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  .slide.cover,.slide.end{border:none}
+  .slide:last-child{page-break-after:auto;break-after:auto}
+  .credit{margin-top:6mm;page-break-before:avoid}
+}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">📚</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🔎</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">🧩</span></div>
+<div class="sticker st-t sm t-clay" style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">top_k=25</span></div>
+<div class="sticker st-t sm t-sage" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">BM25</span></div>
+<div class="sticker st-t sm t-ink"  style="left:6%;top:84%;--rot:-5deg;--dur:5.7s;--del:.2s"><span class="in">recall@5</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">📐</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">🎯</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚠️</span></div>
+<div class="sticker st-t sm t-cream" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">rerank</span></div>
+<div class="sticker st-t sm t-ink st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">swipe →</span></div>
+
+<div class="head">
+  <div class="eyebrow">Daily Drop · Carousel</div>
+  <h1>RAG engineering</h1>
+</div>
+
+<div class="frame">
+  <div class="progress"><i id="bar"></i></div>
+  <div class="track" id="track">
+
+    <section class="slide cover on">
+      <img class="covart" id="covart" alt="" hidden>
+      <div class="kick">Be10x · Daily Drop</div>
+      <h2>Your demo works.<br>Your handbook<br>doesn't.</h2>
+      <p>Why real RAG returns the wrong paragraph — and the five stages that fix it.</p>
+      <div class="swipe">Swipe →</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">01</div>
+      <svg width="290" height="92" viewBox="0 0 290 92" role="img" aria-label="Indexing runs once: load, chunk, embed, store. Retrieval runs on every question: question, embed, search, answer, reading the stored index.">
+        <text x="0" y="8" font-family="Nunito" font-size="8" font-weight="800" letter-spacing=".8" fill="#A08B79">INDEX · ONCE PER CHANGE</text>
+        <g font-family="Nunito" font-size="9.5" font-weight="700" text-anchor="middle">
+          <rect x="0" y="14" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="31" y="28.5" fill="#4A3830">load</text>
+          <rect x="76" y="14" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="107" y="28.5" fill="#4A3830">chunk</text>
+          <rect x="152" y="14" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="183" y="28.5" fill="#4A3830">embed</text>
+          <rect x="228" y="14" width="62" height="22" rx="7" fill="#B4785B"/><text x="259" y="28.5" fill="#FFF6E9">store</text>
+        </g>
+        <path d="M64 25h8M140 25h8M216 25h8" stroke="#E7D8C4" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        <path d="M259 37C259 48 196 44 183 55" stroke="#B4785B" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+        <path d="M183 60l-4-8h8z" fill="#B4785B"/>
+        <text x="0" y="54" font-family="Nunito" font-size="8" font-weight="800" letter-spacing=".8" fill="#A08B79">RETRIEVE · EVERY QUESTION</text>
+        <g font-family="Nunito" font-size="9.5" font-weight="700" text-anchor="middle">
+          <rect x="0" y="62" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="31" y="76.5" fill="#4A3830">question</text>
+          <rect x="76" y="62" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="107" y="76.5" fill="#4A3830">embed</text>
+          <rect x="152" y="62" width="62" height="22" rx="7" fill="#FFFBF3" stroke="#B4785B" stroke-width="1.6"/><text x="183" y="76.5" fill="#4A3830">search</text>
+          <rect x="228" y="62" width="62" height="22" rx="7" fill="#7FA37A"/><text x="259" y="76.5" fill="#F4F8F1">answer</text>
+        </g>
+        <path d="M64 73h8M140 73h8M216 73h8" stroke="#E7D8C4" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <h2>Index once.<br>Retrieve <span class="ac">every time</span>.</h2>
+      <p>Load, chunk, embed, store — that runs once per document change. Retrieval runs on every question.</p>
+      <div class="foot">Index → Retrieve → Rerank → Generate. Evaluate wraps it.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">02</div>
+      <div class="ba">
+        <div class="bad"><span class="lb">split mid-table</span><code>chunk 14 ends "…12 days a year. Unused"<br>chunk 15 opens "days lapse on 31 Dec…"</code></div>
+        <div class="good"><span class="lb">split on structure</span><code>one clause per chunk, table intact</code></div>
+      </div>
+      <h2>Chunking decides<br>what's <span class="ac">answerable</span></h2>
+      <p>A chunk is the unit of what can be retrieved. Baseline: 256–512 tokens, split on structure.</p>
+      <div class="foot">If the answer spans two chunks, no retriever saves you.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">03</div>
+      <svg width="290" height="112" viewBox="0 0 290 112" role="img" aria-label="Embedding space: the casual-leave and earned-leave chunks sit close together inside one dashed circle, far from reimbursement and code of conduct.">
+        <rect x="0" y="4" width="290" height="104" rx="12" fill="#F7EFE2"/>
+        <ellipse cx="80" cy="54" rx="48" ry="32" fill="none" stroke="#C97B7B" stroke-width="1.6" stroke-dasharray="4 4"/>
+        <circle cx="62" cy="44" r="5" fill="#B4785B"/>
+        <circle cx="96" cy="62" r="5" fill="#B4785B"/>
+        <circle cx="200" cy="32" r="5" fill="#A08B79"/>
+        <circle cx="238" cy="78" r="5" fill="#A08B79"/>
+        <g font-family="Nunito" font-size="8" font-weight="800" text-anchor="middle" fill="#4A3830">
+          <text x="62" y="35">casual leave</text>
+          <text x="96" y="78">earned leave</text>
+          <text x="200" y="23">reimbursement</text>
+          <text x="238" y="93">code of conduct</text>
+        </g>
+        <text x="80" y="100" font-family="Nunito" font-size="7.5" font-weight="800" text-anchor="middle" fill="#C97B7B">written alike → stored alike</text>
+      </svg>
+      <h2>Meaning becomes<br><span class="ac">coordinates</span></h2>
+      <p>An embedding is a list of numbers — commonly 1024–1536 of them. Similar meaning, nearby vectors.</p>
+      <div class="foot">Index and query must use the same embedding model.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">04</div>
+      <div class="ba">
+        <div class="bad"><span class="lb">top-1 from dense search</span><code>"Earned leave accrues monthly and<br>unused days carry forward."</code></div>
+        <div class="good"><span class="lb">what you actually asked</span><code>"Casual leave: 12 days a year.<br>Unused days lapse on 31 December."</code></div>
+      </div>
+      <h2>Closest is not<br><span class="ac">correct</span></h2>
+      <p>You asked about casual leave. It handed back earned leave.</p>
+      <div class="foot">Worded alike. Embeddings measure similarity, not correctness.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">05</div>
+      <div class="rows">
+        <div class="row"><span class="b">"</span><span class="tx">Exact policy names<s>"casual leave" — the phrase the user typed</s></span></div>
+        <div class="row"><span class="b">#</span><span class="tx">IDs and codes<s>claim LTA-2025-04, invoice and voucher numbers</s></span></div>
+        <div class="row"><span class="b">A</span><span class="tx">Acronyms<s>LTA, PF, HRA — short, rare, unparaphrasable</s></span></div>
+      </div>
+      <h2>Keywords still<br>win some <span class="ac">fights</span></h2>
+      <p>Dense retrieval catches paraphrase. BM25 catches the exact string.</p>
+      <div class="foot">Hybrid is the default now, not an optimisation.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">06</div>
+      <h2>Fuse the<br>two <span class="ac">lists</span></h2>
+      <div class="code">score(d) = Σ 1 / (<span class="kw">k</span> + rank),  <span class="kw">k = 60</span>
+
+dense  rank 7  →  1/67  =  .0149
+bm25   rank 1  →  1/61  =  .0164
+                           ─────
+casual-leave chunk         <span class="kw">.0313</span></div>
+      <p>Reciprocal Rank Fusion merges the two lists by <b>rank, not score</b>.</p>
+      <div class="foot">No calibrating cosine against BM25. k=60 is the default.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">07</div>
+      <svg width="290" height="88" viewBox="0 0 290 88" role="img" aria-label="Twenty-five retrieved chunks, the seventh marked, funnel through a cross-encoder down to three; the casual-leave chunk comes out first.">
+        <text x="24" y="10" font-family="Nunito" font-size="8" font-weight="800" text-anchor="middle" fill="#A08B79">top 25</text>
+        <g fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.2">
+          <rect x="0" y="16" width="8" height="8" rx="2"/><rect x="10" y="16" width="8" height="8" rx="2"/><rect x="20" y="16" width="8" height="8" rx="2"/><rect x="30" y="16" width="8" height="8" rx="2"/><rect x="40" y="16" width="8" height="8" rx="2"/>
+          <rect x="0" y="26" width="8" height="8" rx="2"/><rect x="10" y="26" width="8" height="8" rx="2" fill="#C97B7B" stroke="#C97B7B"/><rect x="20" y="26" width="8" height="8" rx="2"/><rect x="30" y="26" width="8" height="8" rx="2"/><rect x="40" y="26" width="8" height="8" rx="2"/>
+          <rect x="0" y="36" width="8" height="8" rx="2"/><rect x="10" y="36" width="8" height="8" rx="2"/><rect x="20" y="36" width="8" height="8" rx="2"/><rect x="30" y="36" width="8" height="8" rx="2"/><rect x="40" y="36" width="8" height="8" rx="2"/>
+          <rect x="0" y="46" width="8" height="8" rx="2"/><rect x="10" y="46" width="8" height="8" rx="2"/><rect x="20" y="46" width="8" height="8" rx="2"/><rect x="30" y="46" width="8" height="8" rx="2"/><rect x="40" y="46" width="8" height="8" rx="2"/>
+          <rect x="0" y="56" width="8" height="8" rx="2"/><rect x="10" y="56" width="8" height="8" rx="2"/><rect x="20" y="56" width="8" height="8" rx="2"/><rect x="30" y="56" width="8" height="8" rx="2"/><rect x="40" y="56" width="8" height="8" rx="2"/>
+        </g>
+        <text x="0" y="78" font-family="Nunito" font-size="7.5" font-weight="800" fill="#C97B7B">rank 7 = the right chunk</text>
+        <path d="M54 40h14" stroke="#E7D8C4" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        <path d="M74 40l-7-4v8z" fill="#E7D8C4"/>
+        <rect x="78" y="28" width="100" height="24" rx="8" fill="#4A3830"/>
+        <text x="128" y="44" font-family="Nunito" font-size="9.5" font-weight="700" text-anchor="middle" fill="#F0E5D8">cross-encoder</text>
+        <path d="M184 40h14" stroke="#E7D8C4" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        <path d="M204 40l-7-4v8z" fill="#E7D8C4"/>
+        <text x="247" y="10" font-family="Nunito" font-size="8" font-weight="800" text-anchor="middle" fill="#A08B79">keep 3</text>
+        <rect x="204" y="14" width="86" height="16" rx="6" fill="#B4785B"/>
+        <text x="247" y="25.5" font-family="Nunito" font-size="8.5" font-weight="800" text-anchor="middle" fill="#FFF6E9">casual leave ✓</text>
+        <rect x="204" y="36" width="86" height="16" rx="6" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.4"/>
+        <text x="247" y="47.5" font-family="Nunito" font-size="8.5" font-weight="700" text-anchor="middle" fill="#A08B79">leave policy intro</text>
+        <rect x="204" y="58" width="86" height="16" rx="6" fill="#FFFBF3" stroke="#E7D8C4" stroke-width="1.4"/>
+        <text x="247" y="69.5" font-family="Nunito" font-size="8.5" font-weight="700" text-anchor="middle" fill="#A08B79">HR FAQ · leave</text>
+      </svg>
+      <h2>Retrieve wide.<br>Then <span class="ac">narrow</span>.</h2>
+      <p>A cross-encoder reads query and chunk <b>together</b>, so it judges far better than a distance.</p>
+      <div class="foot">~25 → ~3. Rank 7 becomes rank 1. Roughly 80–150ms.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">08</div>
+      <h2>Hand the chunk<br>its <span class="ac">document</span></h2>
+      <div class="code"><span class="cm"># 50–100 LLM-written tokens, prepended</span>
+From the 2025 leave policy, section 4,
+on casual leave accrual and lapse.
+
+Casual leave: 12 days a year. Unused
+days lapse on 31 December.</div>
+      <p><b>Anthropic's Contextual Retrieval:</b> situate the chunk first.</p>
+      <div class="foot">Anthropic reports 35% fewer retrieval failures; 49% with contextual BM25, 67% adding reranking.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">09</div>
+      <svg width="290" height="108" viewBox="0 0 290 108" role="img" aria-label="A U-shaped curve: the model uses the first and last chunks of a long prompt well and dips for anything buried in the middle.">
+        <text x="0" y="9" font-family="Nunito" font-size="7.5" font-weight="800" fill="#A08B79">HOW RELIABLY THE MODEL USES A CHUNK</text>
+        <path d="M8 14V94M8 94h276" stroke="#E7D8C4" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M14 24C56 76 100 86 146 86C192 86 238 60 282 32" stroke="#B4785B" stroke-width="2.8" stroke-linecap="round" fill="none"/>
+        <circle cx="14" cy="24" r="4.5" fill="#B4785B"/>
+        <circle cx="146" cy="86" r="5" fill="#C97B7B"/>
+        <circle cx="282" cy="32" r="4.5" fill="#B4785B"/>
+        <g font-family="Nunito" font-size="8" font-weight="800">
+          <text x="22" y="22" fill="#4A3830">first chunk</text>
+          <text x="146" y="76" text-anchor="middle" fill="#C97B7B">buried in the middle</text>
+          <text x="276" y="26" text-anchor="end" fill="#4A3830">last chunk</text>
+        </g>
+        <text x="8" y="105" font-family="Nunito" font-size="7.5" font-weight="800" fill="#A08B79">POSITION IN THE PROMPT →</text>
+      </svg>
+      <h2>Models miss<br>the <span class="ac">middle</span></h2>
+      <p><b>Lost in the middle</b> (Liu et al., 2023). Bigger context windows did not fix it.</p>
+      <div class="foot">Retrieve fewer, better chunks. Put the strongest first.</div>
+    </section>
+
+    <section class="slide">
+      <div class="num">10</div>
+      <div class="rows">
+        <div class="row"><span class="b">1</span><span class="tx">Golden set<s>30–100 real questions, known correct sources</s></span></div>
+        <div class="row"><span class="b">2</span><span class="tx">Recall@k<s>is the right chunk anywhere in the top k?</s></span></div>
+        <div class="row"><span class="b">3</span><span class="tx">Faithfulness<s>is every claim backed by a retrieved chunk?</s></span></div>
+      </div>
+      <h2>Perfect recall.<br>Wrong <span class="ac">answer</span>.</h2>
+      <p>The right chunk can sit in the context and the answer still be wrong.</p>
+      <div class="foot">Measure both halves. RAG fails silently until you look.</div>
+    </section>
+
+    <section class="slide end">
+      <h2>Fix retrieval<br>before the prompt.</h2>
+      <p>Take your worst question, look at what actually got retrieved, and fix that first. Next drop: the 2024 habits that are now the bug.</p>
+      <div><span class="tag">Follow for daily drops ❀</span></div>
+      <div class="by">Be10x · Eshmith Saideep</div>
+    </section>
+
+  </div>
+  <div class="controls">
+    <button class="nav" id="prev">←</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav" id="next">→</button>
+  </div>
+  <div class="hintline">swipe · arrow keys · tap the dots</div>
+  <div class="pdfrow"><button class="pdfbtn" id="pdf">Save as PDF</button></div>
+  <div class="credit">Be10x · Daily Drop · Eshmith Saideep</div>
+</div>
+<script>
+/* ===== paste your generated cover image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ================================================================= */
+if(HERO_IMAGE){const h=document.getElementById("covart");h.src=HERO_IMAGE;h.hidden=false;}
+const slides=[...document.querySelectorAll('.slide')],dots=document.getElementById('dots'),bar=document.getElementById('bar');
+const prev=document.getElementById('prev'),next=document.getElementById('next');let i=0;
+slides.forEach((_,k)=>{const b=document.createElement('button');b.className='dot'+(k?'':' on');
+  b.onclick=()=>go(k);dots.appendChild(b);});
+function go(k){i=Math.max(0,Math.min(slides.length-1,k));
+  slides.forEach((s,n)=>s.classList.toggle('on',n===i));
+  [...dots.children].forEach((d,n)=>d.classList.toggle('on',n===i));
+  bar.style.width=((i+1)/slides.length*100)+'%';prev.disabled=i===0;next.disabled=i===slides.length-1;}
+prev.onclick=()=>go(i-1);next.onclick=()=>go(i+1);
+addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);});
+let x0=null;const track=document.getElementById('track');
+track.addEventListener('pointerdown',e=>x0=e.clientX);
+track.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;
+  if(Math.abs(dx)>44)go(dx<0?i+1:i-1);x0=null;});
+go(0);
+document.getElementById('pdf').onclick=()=>window.print();
+(function(){const G=['→','↺','{}','⊳','⇄','●'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>

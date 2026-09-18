@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Engineering — Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--deep:#9A5F44;--sage:#7FA37A;--sage-bg:#EEF3EA;--rose:#C97B7B;--rose-bg:#F7EAEA;
+  --sun:#E8B95C;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding:0 30px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(247,239,226,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 18px;scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+nav a{flex:none;text-decoration:none;font-size:.76rem;font-weight:800;color:var(--dim);
+  padding:7px 12px;border-radius:9px;white-space:nowrap}
+nav a:hover{background:var(--card);color:var(--ink)}
+nav a.on{background:var(--clay);color:#FFF6E9}
+
+/* hero */
+header{padding:82px 0 62px;text-align:center}
+.kick{font-size:.68rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:3rem;line-height:1.05;margin:12px 0}
+h1 .ac{color:var(--clay)}
+header p{color:#6B5647;font-weight:600;font-size:1.02rem;max-width:54ch;margin:0 auto}
+
+/* sections */
+section{padding:76px 0 82px;border-top:1px solid var(--line);position:relative}
+section::before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+  width:10px;height:10px;border-radius:50%;background:var(--clay);
+  box-shadow:0 0 0 6px var(--bg)}
+.num{font-family:var(--mono);font-size:.78rem;color:var(--clay);font-weight:700;
+  letter-spacing:.14em;display:inline-block;background:#FBF3E7;border:1px solid var(--line);
+  border-radius:8px;padding:4px 10px;margin-bottom:10px}
+h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.85rem;line-height:1.14;margin:4px 0 12px}
+.lede{color:#6B5647;font-weight:600;font-size:1rem;margin-bottom:30px;max-width:66ch}
+.try{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--sun);color:#5C4210;border-radius:6px;padding:4px 10px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;
+  box-shadow:0 6px 22px rgba(122,90,64,.07)}
+.take{margin-top:22px;border-left:3px solid var(--clay);background:#FBF3E7;border-radius:0 12px 12px 0;
+  padding:12px 15px;font-size:.9rem;color:#6B5647}
+.take b{color:var(--deep)}
+
+/* controls */
+label.f{display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;color:var(--dim);margin:18px 0 8px}
+label.f b{font-family:var(--mono);color:var(--clay)}
+input[type=range]{width:100%;height:26px;-webkit-appearance:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid var(--clay);margin-top:-7px;box-shadow:0 2px 5px rgba(122,90,64,.25)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--clay)}
+input[type=range]:disabled{opacity:.4}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--clay);color:#FFF6E9;border:none;border-radius:11px;padding:11px 18px;
+  font-weight:800;font-size:.88rem}
+.btn:hover{background:var(--deep)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:none;color:var(--clay);border:1.5px solid var(--clay)}
+.btn.ghost:hover{background:#FBF3E7;color:var(--deep)}
+.row{display:flex;gap:11px;flex-wrap:wrap;margin-top:20px;align-items:center}
+.stat{display:flex;gap:28px;flex-wrap:wrap;margin-top:20px;font-family:var(--mono);font-size:.78rem;color:var(--dim)}
+.stat b{color:var(--clay);font-size:1.05rem}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 40px}
+.sliders label.f{margin-top:6px}
+.results{margin-top:28px;padding-top:26px;border-top:1px solid var(--line)}
+@media(max-width:640px){.card{padding:20px}}
+.verdict{margin-top:18px;border-radius:11px;padding:12px 14px;font-size:.9rem;font-weight:700}
+.verdict.ok{background:var(--sage-bg);border:1.5px solid var(--sage);color:#3F6B47}
+.verdict.no{background:var(--rose-bg);border:1.5px solid var(--rose);color:#8E4646}
+.verdict.mid{background:#FBF3E7;border:1.5px solid var(--sun);color:#7A5518}
+pre{font-family:var(--mono);font-size:.8rem;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:14px;overflow-x:auto;line-height:1.75;margin-top:12px}
+pre .k{color:#E8B583}pre .s{color:#A8C99A}pre .c{color:#9A8776}
+.reqs{font-family:var(--mono);font-size:.74rem;color:var(--dim);align-self:center}
+
+/* switches */
+.switches{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px}
+.sw{display:flex;gap:13px;align-items:center;text-align:left;background:var(--bg);
+  border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+.sw.on{background:var(--sage-bg);border-color:var(--sage)}
+.knob{width:34px;height:19px;border-radius:10px;background:var(--line);position:relative;flex-shrink:0;transition:background .2s}
+.knob::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;
+  background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on .knob{background:var(--sage)}
+.sw.on .knob::after{transform:translateX(15px)}
+.sl b{font-size:.86rem}
+.sl s{display:block;font-size:.74rem;color:var(--dim);text-decoration:none;font-weight:600;margin-top:2px}
+
+/* ---- definitions rail ---- */
+.lab{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:62px;align-items:start}
+.defs{display:flex;flex-direction:column;gap:20px;position:relative;z-index:2}
+.def{background:#fff;border:1.5px solid var(--line);border-left:4px solid var(--sage);
+  border-radius:12px;padding:14px 16px;box-shadow:0 3px 12px rgba(122,90,64,.07)}
+.def .lb{font-family:var(--mono);font-size:.56rem;letter-spacing:.18em;font-weight:700;color:var(--sage)}
+.def h4{font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;margin:3px 0 4px;line-height:1.2}
+.def p{font-size:.78rem;line-height:1.5;color:#6B5647;font-weight:600}
+.def p b{color:var(--deep)}
+.term{font-weight:800;color:var(--deep);border-bottom:2px dotted var(--sage);white-space:nowrap;position:relative}
+.wl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1}
+.wl path{fill:none;stroke:var(--sage);stroke-width:1.5;stroke-dasharray:4 4;opacity:.85}
+.wl circle{fill:var(--sage);stroke:#FFFBF3;stroke-width:1.5}
+@media(max-width:980px){
+  .lab{grid-template-columns:1fr;gap:16px}
+  .wl{display:none}
+  .term{border-bottom-style:solid}
+  .defs{margin-top:4px}
+}
+footer{padding:74px 0 90px;text-align:center;border-top:1px solid var(--line);margin-top:20px}
+footer .big{font-family:'Fraunces',serif;font-weight:900;font-size:1.4rem;margin-bottom:8px}
+footer p{color:var(--dim);font-weight:600;font-size:.9rem;max-width:52ch;margin:0 auto 16px}
+footer .cred{font-family:var(--mono);font-size:.74rem;color:var(--dim);margin-top:22px}
+body,button,input{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='6' y='6' width='12' height='12' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Crect x='9.5' y='9.5' width='5' height='5' rx='1' fill='%23B4785B'/%3E%3Cpath d='M9 6V3M15 6V3M9 21v-3M15 21v-3M6 9H3M6 15H3M21 9h-3M21 15h-3' stroke='%23B4785B' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") 6 4, auto}
+
+/* ---- shared RAG bits ---- */
+.qbox{font-family:'Fraunces',serif;font-weight:700;font-size:1.16rem;line-height:1.4;
+  background:var(--bg);border-radius:12px;padding:17px 19px;margin-bottom:4px}
+.qbox s{display:block;font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;
+  color:var(--dim);text-decoration:none;font-weight:700;margin-bottom:7px}
+.pipe{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.pst{font-family:var(--mono);font-size:.72rem;background:var(--bg);border:1.5px dashed var(--line);
+  color:var(--dim);border-radius:8px;padding:6px 10px;transition:all .25s}
+.pst.done{border-style:solid;border-color:var(--sage);background:var(--sage-bg);color:#3F6B47}
+.pst.live{border-style:solid;border-color:var(--clay);background:#FBF3E7;color:var(--deep)}
+.hit{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border:1.5px solid var(--line);
+  border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.hit.gold{background:var(--sage-bg);border-color:var(--sage)}
+.hit.bad{background:var(--rose-bg);border-color:var(--rose)}
+.hit .rk{font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;width:28px;height:28px;flex:none;
+  border-radius:8px;background:var(--clay);color:#FFF6E9;display:flex;align-items:center;justify-content:center}
+.hit.gold .rk{background:var(--sage)}.hit.bad .rk{background:var(--rose)}
+.hit .bd{min-width:0;flex:1}
+.hit .ti{font-size:.87rem;font-weight:800}
+.hit .mt{font-family:var(--mono);font-size:.66rem;color:var(--dim);margin:2px 0 4px}
+.hit .tx{font-size:.8rem;color:#6B5647;font-weight:600}
+.hit .sc{font-family:var(--mono);font-size:.76rem;color:var(--clay);font-weight:700;flex:none;text-align:right}
+.hit .sc s{display:block;font-size:.6rem;color:var(--dim);text-decoration:none}
+.ans{border-radius:12px;padding:14px 16px;margin-top:16px;font-size:.92rem;border:1.5px solid}
+.ans.bad{background:var(--rose-bg);border-color:var(--rose)}
+.ans.good{background:var(--sage-bg);border-color:var(--sage)}
+.ans .al{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--dim);display:block;margin-bottom:6px}
+.ans b{color:var(--deep)}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+@media(max-width:640px){.side{grid-template-columns:1fr}}
+.para{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:13px 15px;font-size:.8rem;
+  color:#6B5647;font-weight:600;line-height:1.55}
+.para h5{font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;color:var(--ink);margin-bottom:6px}
+.para em.sh{font-style:normal;background:rgba(232,185,92,.42);border-radius:3px;padding:0 2px}
+.pill{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:700;border-radius:6px;
+  padding:3px 8px;margin:3px 4px 0 0;border:1.5px solid var(--line);background:var(--bg);color:var(--dim)}
+.pill.ok{background:var(--sage-bg);border-color:var(--sage);color:#3F6B47}
+.pill.no{background:var(--rose-bg);border-color:var(--rose);color:#8E4646}
+
+/* ---- 02 chunk text ---- */
+.ctext{background:var(--bg);border-radius:12px;padding:16px;font-size:.82rem;line-height:2.05;margin-top:16px}
+.ctext w{border-radius:3px;padding:1px 1px}
+.ctext w.hd{font-family:'Fraunces',serif;font-weight:900;font-size:.9rem}
+.ctext w.ov{box-shadow:inset 0 -2px 0 var(--clay)}
+.ctext w.key{font-weight:800;color:var(--deep);text-decoration:underline;text-decoration-color:var(--sage);
+  text-decoration-thickness:2px;text-underline-offset:3px}
+.ctext w.brk{border-left:2px solid var(--rose);margin-left:3px;padding-left:3px}
+.clegend{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.clg{font-family:var(--mono);font-size:.66rem;border-radius:7px;padding:4px 8px;border:1.5px solid var(--line)}
+.checks{display:grid;gap:8px;margin-top:18px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:.84rem;font-weight:700}
+.chk i{font-style:normal;font-family:var(--mono);font-size:.8rem;width:20px;flex:none;text-align:center}
+.chk.y{color:#3F6B47}.chk.n{color:#8E4646}
+.chk s{display:block;text-decoration:none;font-weight:600;color:var(--dim);font-size:.78rem}
+
+/* ---- 03 map ---- */
+.mapwrap{background:var(--bg);border-radius:14px;padding:8px;margin:14px auto 0;max-width:560px}
+.mapwrap svg{width:100%;max-width:540px;height:auto;display:block;margin:0 auto}
+.mapwrap text{font-family:'JetBrains Mono',monospace;font-size:10px}
+@media(max-width:640px){.mapwrap text{font-size:14px}}
+.nb{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:.78rem;
+  border-bottom:1px dashed var(--line);padding:6px 0}
+.nb b{color:var(--clay)}
+.nb.self{color:var(--dim)}
+
+/* ---- 04 rank table ---- */
+.rkt{margin-top:6px}
+.rkrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;
+  background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:9px 11px;margin-bottom:7px;
+  transition:background .3s,border-color .3s}
+.rkrow.gold{background:var(--sage-bg);border-color:var(--sage)}
+.rkrow.wrong{background:var(--rose-bg);border-color:var(--rose)}
+.rkrow .rk{font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;width:26px;height:26px;
+  border-radius:8px;background:var(--clay);color:#FFF6E9;display:flex;align-items:center;justify-content:center}
+.rkrow.gold .rk{background:var(--sage)}.rkrow.wrong .rk{background:var(--rose)}
+.rkrow .ti{font-size:.84rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rkrow .mt{font-family:var(--mono);font-size:.64rem;color:var(--dim)}
+.rkrow .sc{font-family:var(--mono);font-size:.72rem;color:var(--clay);font-weight:700;text-align:right;white-space:nowrap}
+.rkrow .sc s{display:block;color:var(--dim);text-decoration:none;font-size:.6rem}
+.tag{font-family:var(--mono);font-size:.58rem;border-radius:5px;padding:1px 5px;margin-left:6px;
+  border:1px solid var(--sun);background:rgba(232,185,92,.25);color:#7A5518}
+.chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ychip{font-family:var(--mono);font-size:.76rem;background:var(--bg);border:1.5px solid var(--line);
+  border-radius:8px;padding:6px 11px;font-weight:700;color:var(--dim)}
+.ychip.on{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.calc{font-family:var(--mono);font-size:.78rem;background:var(--bg);border-radius:11px;padding:13px 15px;
+  margin-top:16px;line-height:1.9;overflow-x:auto}
+.calc b{color:var(--clay)}
+.calc .fx{font-size:.92rem;color:var(--deep);font-weight:700}
+
+/* ---- 05 context strip ---- */
+.ctxrow{display:grid;grid-template-columns:26px minmax(0,1fr) 64px auto;gap:9px;align-items:center;
+  background:var(--bg);border:1.5px solid var(--line);border-radius:11px;padding:8px 10px;margin-bottom:6px}
+.ctxrow.gold{background:var(--sage-bg);border-color:var(--sage)}
+.ctxrow .pn{font-family:var(--mono);font-size:.74rem;color:var(--dim);text-align:center;font-weight:700}
+.ctxrow .ti{font-size:.82rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctxrow .mt{font-family:var(--mono);font-size:.62rem;color:var(--dim)}
+.abar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.abar i{display:block;height:100%;background:var(--clay);border-radius:4px;transition:width .3s}
+.ctxrow.gold .abar i{background:var(--sage)}
+.mv{display:flex;gap:4px}
+.mv button{background:var(--card);border:1.5px solid var(--line);border-radius:8px;width:26px;height:26px;
+  font-size:.7rem;color:var(--clay);font-weight:800;line-height:1;padding:0}
+.mv button:hover:not(:disabled){border-color:var(--clay)}
+.mv button:disabled{opacity:.3;cursor:default}
+.mv button.top{width:auto;padding:0 8px;font-size:.64rem;font-family:var(--mono)}
+@media(max-width:560px){
+  .ctxrow{grid-template-columns:24px minmax(0,1fr) auto}
+  .ctxrow .abar{display:none}
+  .mv button.top{display:none}
+}
+
+/* ---- 06 meters ---- */
+.mtr{margin-top:16px}
+.mtr .lbl{display:flex;justify-content:space-between;font-size:.82rem;font-weight:800;margin-bottom:6px}
+.mtr .lbl s{text-decoration:none;font-family:var(--mono);color:var(--clay);font-size:.95rem}
+.mtr .bar{height:24px;border-radius:9px;background:var(--line);overflow:hidden;position:relative}
+.mtr .bar i{display:block;height:100%;border-radius:9px;transition:width .4s,background .4s}
+.mtr.g .bar i{background:var(--sage)}.mtr.b .bar i{background:var(--rose)}.mtr.m .bar i{background:var(--sun)}
+.gtbl{margin-top:20px;font-size:.8rem}
+.gtr{display:grid;grid-template-columns:minmax(0,1fr) 70px 70px;gap:8px;align-items:center;
+  padding:8px 0;border-bottom:1px dashed var(--line)}
+.gtr.hd{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.gtr .q{font-weight:700;min-width:0}
+.gtr .q s{display:block;text-decoration:none;font-weight:600;color:var(--dim);font-size:.72rem;
+  overflow:hidden;text-overflow:ellipsis}
+.gtr .c{font-family:var(--mono);font-size:.76rem;text-align:right;font-weight:700}
+.gtr .c.y{color:#3F6B47}.gtr .c.n{color:#8E4646}
+
+</style>
+</head>
+<body>
+<nav><div class="wrap" id="nav"></div></nav>
+
+<header class="wrap">
+  <div class="kick">Be10x · Interactive</div>
+  <h1>Your retriever<br>returns the <span class="ac">wrong paragraph</span></h1>
+  <p>You already know what RAG is — search your documents, paste the relevant part into the prompt. This week is the engineering. One HR handbook, one question, six places it breaks. Everything below recomputes live.</p>
+</header>
+
+<!-- 01 -->
+<section class="wrap" id="s1">
+  <div class="num">01</div>
+  <h2>Your demo works. Your handbook doesn't.</h2>
+  <p class="lede">Ten chunks from a company handbook. One question an employee actually asks. Run the naive <span class="term" id="t-pipe">RAG pipeline</span> — top-k vector search, stuff the results in the prompt — and watch it answer confidently from the wrong policy. This is a <span class="term" id="t-fail">retrieval failure</span>, not a model failure.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="qbox"><s>THE QUESTION</s>“How many casual leaves do I get, and do unused ones carry over?”</div>
+    <div class="pipe" id="p1stages"></div>
+    <div id="p1out"></div>
+    <div class="row"><button class="btn" id="p1run">Run the naive pipeline</button>
+      <button class="btn ghost" id="p1reset">Reset</button></div>
+    <div class="take" id="p1take">Ten chunks. Top-k = 3. No filters, no reranker, no hybrid — the pipeline most demos ship with.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-pipe"><div class="lb">DEFINITION</div><h4>RAG pipeline</h4>
+      <p><b>Index → retrieve → rerank → generate</b>, with <b>evaluate</b> wrapped around all of it. Indexing runs once per document change. Everything else runs on every question.</p></div>
+    <div class="def" data-term="t-fail"><div class="lb">DEFINITION</div><h4>Retrieval failure</h4>
+      <p>The right passage existed and the retriever didn't hand it over. The model then answers fluently from whatever it <i>was</i> given — so the failure is <b>invisible in the output</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 02 -->
+<section class="wrap" id="s2">
+  <div class="num">02</div>
+  <h2>Chunking decides what is answerable.</h2>
+  <p class="lede">A <span class="term" id="t-chunk">chunk</span> is the unit of what can be retrieved. Split this handbook page yourself and watch two facts that belong together get separated — or a chunk grow so broad it stops being about anything. <span class="term" id="t-parent">Parent-document retrieval</span> and structure-aware splitting are the ways out.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="switches" id="c2sw"></div>
+    <div class="sliders">
+      <div><label class="f">Chunk size <b id="c2sv">100 tokens</b></label>
+        <input type="range" id="c2size" min="100" max="800" step="20" value="100"></div>
+      <div><label class="f">Overlap <b id="c2ov">0%</b></label>
+        <input type="range" id="c2overlap" min="0" max="25" step="5" value="0"></div>
+    </div>
+    <div class="clegend" id="c2legend"></div>
+    <div class="ctext" id="c2text"></div>
+    <div class="results">
+      <div class="stat">
+        <span>chunks <b id="c2n">0</b></span>
+        <span>words each <b id="c2w">0</b></span>
+        <span>casual-leave density <b id="c2d">0%</b></span>
+      </div>
+      <div class="checks" id="c2checks"></div>
+    </div>
+    <div class="verdict" id="c2v"></div>
+    <div class="take" id="c2take"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-chunk"><div class="lb">DEFINITION</div><h4>Chunk</h4>
+      <p>One retrievable piece of a document. If the answer is split across two chunks, <b>no retriever can save you</b>. A common baseline is 256–512 tokens with 10–20% overlap.</p></div>
+    <div class="def" data-term="t-parent"><div class="lb">DEFINITION</div><h4>Parent-document retrieval</h4>
+      <p>Index the <b>small</b> chunk so matching stays precise, then return the <b>larger</b> parent section as context. You get sharp retrieval and whole tables. Standard upgrade.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 03 -->
+<section class="wrap" id="s3">
+  <div class="num">03</div>
+  <h2>Embeddings measure similarity, not truth.</h2>
+  <p class="lede">Every chunk becomes an <span class="term" id="t-emb">embedding</span> — a point in space. Near means “worded alike”, which is not the same as “correct”. Click a chunk to see its nearest neighbours by <span class="term" id="t-cos">cosine similarity</span>, then move top-k and watch which ones make the cut.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="mapwrap" id="c3map"></div>
+    <label class="f">top-k <b id="c3kv">3</b></label>
+    <input type="range" id="c3k" min="1" max="10" step="1" value="3">
+    <div class="results">
+      <div style="font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--dim);margin-bottom:6px" id="c3sel"></div>
+      <div id="c3nb"></div>
+    </div>
+    <div class="verdict" id="c3v"></div>
+    <div class="take" id="c3take"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-emb"><div class="lb">DEFINITION</div><h4>Embedding</h4>
+      <p>Text turned into coordinates — typically 1024 to 1536 numbers. Similar meaning, nearby vectors. The map here is that space flattened to two dimensions so you can see it.</p></div>
+    <div class="def" data-term="t-cos"><div class="lb">DEFINITION</div><h4>Cosine similarity</h4>
+      <p>How aligned two vectors are, 0 to 1. It scores <b>wording, not accuracy</b> — a paragraph about the wrong leave type scores high if it is written the same way.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 04 -->
+<section class="wrap" id="s4">
+  <div class="num">04</div>
+  <h2>Hybrid, then rerank.</h2>
+  <p class="lede">“Casual leave” is an exact phrase the employee typed — exactly what <span class="term" id="t-bm25">BM25</span> is good at and dense retrieval smears over. Fuse the two lists, then let a <span class="term" id="t-rr">reranker</span> read each chunk against the question. Watch the correct chunk go 7 → 3 → 1.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="switches" id="c4sw"></div>
+    <div class="chipwrap" id="c4year"></div>
+    <div class="results">
+      <div class="rkt" id="c4rows"></div>
+    </div>
+    <div class="verdict" id="c4v"></div>
+    <div class="calc" id="c4calc"></div>
+    <div class="take" id="c4take"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-bm25"><div class="lb">DEFINITION</div><h4>BM25 / hybrid search</h4>
+      <p>Keyword scoring that rewards rare exact terms — IDs, acronyms, policy names. Run it <b>alongside</b> dense retrieval and fuse the two rankings. Hybrid is the default now, not an optimisation.</p></div>
+    <div class="def" data-term="t-rr"><div class="lb">DEFINITION</div><h4>Reranker</h4>
+      <p>A <b>cross-encoder</b> reads the question and the chunk together, so it judges far better than a vector distance — and is far too slow to run over the whole corpus. That is why it goes second.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 05 -->
+<section class="wrap" id="s5">
+  <div class="num">05</div>
+  <h2>Lost in the middle.</h2>
+  <p class="lede">Retrieval worked. The right chunk is in the prompt — fifth of nine. Models attend best to the start and the end of a long context and genuinely miss what sits between: <span class="term" id="t-litm">lost in the middle</span>, Liu et al., 2023. Reorder the context and watch what the model <span class="term" id="t-gr">grounds</span> its answer in.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div id="c5curve" class="mapwrap"></div>
+    <div class="switches" id="c5sw" style="margin-top:16px"></div>
+    <div class="row"><button class="btn ghost" id="c5rs">Reset the order</button>
+      <span class="reqs">put §4.2 first, or cut nine chunks to three</span></div>
+    <div class="results">
+      <div id="c5rows"></div>
+      <div id="c5ans"></div>
+    </div>
+    <div class="take" id="c5take"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-litm"><div class="lb">DEFINITION</div><h4>Lost in the middle</h4>
+      <p>A position bias: accuracy is highest when the needed passage is <b>first or last</b> and dips in between. Named by Liu et al. in 2023. Bigger context windows have <b>not</b> fixed it.</p></div>
+    <div class="def" data-term="t-gr"><div class="lb">DEFINITION</div><h4>Grounding</h4>
+      <p>Instructing the model to answer <b>only</b> from the supplied context, to cite the chunk, and to say when the context doesn't contain the answer. An ungrounded RAG answer is a hallucination with extra steps.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 06 -->
+<section class="wrap" id="s6">
+  <div class="num">06</div>
+  <h2>Measure it or you're guessing.</h2>
+  <p class="lede">Five real handbook questions with known correct sources — a golden set. Toggle everything you just built and watch two numbers move <i>independently</i>: <span class="term" id="t-rec">recall@k</span> says the right chunk arrived, <span class="term" id="t-faith">faithfulness</span> says the answer actually used it. One of these states scores perfect recall and still answers badly.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="switches" id="c6sw"></div>
+    <div class="results">
+      <div class="mtr" id="m-rec"><div class="lbl"><span>recall@5 — did the right chunk get retrieved?</span><s id="c6rv">0%</s></div>
+        <div class="bar"><i id="c6rb" style="width:0%"></i></div></div>
+      <div class="mtr" id="m-fa"><div class="lbl"><span>faithfulness — did the answer only use what was retrieved?</span><s id="c6fv">0%</s></div>
+        <div class="bar"><i id="c6fb" style="width:0%"></i></div></div>
+      <div class="gtbl" id="c6tbl"></div>
+    </div>
+    <div class="verdict" id="c6v"></div>
+    <div class="row"><button class="btn ghost" id="c6trap">Show me the trap</button>
+      <button class="btn ghost" id="c6all">Turn everything on</button></div>
+    <div class="take" id="c6take"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-rec"><div class="lb">DEFINITION</div><h4>Recall@k</h4>
+      <p>Of the chunks that genuinely answer the question, how many appear in the top k. It tells you the retriever did its job — and <b>nothing at all</b> about the answer.</p></div>
+    <div class="def" data-term="t-faith"><div class="lb">DEFINITION</div><h4>Faithfulness</h4>
+      <p>The fraction of claims in the answer that are supported by the retrieved context. Measured with an LLM judge against a rubric. A system can score <b>perfect recall and still be wrong</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<footer class="wrap">
+  <div class="big">Index → retrieve → rerank → generate. Evaluate all of it.</div>
+  <p>Chunk on structure, not on a token count. Retrieve with keywords and vectors, then fuse. Rerank wide-to-narrow. Put the strongest chunk first and fewer of them. Then measure both halves, because recall alone will lie to you.</p>
+  <a class="btn" href="#s1" style="text-decoration:none;display:inline-block">Back to the top</a>
+  <div class="cred">Be10x · Daily Drop — RAG Engineering · built by Eshmith Saideep</div>
+  <div class="cred" style="margin-top:6px">All retrieval scores on this page come from one simulated 10-chunk corpus, consistent across every section. They are a teaching model, not a benchmark.</div>
+</footer>
+
+<script>
+/* ---------- nav ---------- */
+const SECTIONS=[["s1","The failure"],["s2","Chunking"],["s3","Embeddings"],["s4","Hybrid + rerank"],["s5","Lost in the middle"],["s6","Evaluate"]];
+document.getElementById('nav').innerHTML=SECTIONS.map(([id,l])=>`<a href="#${id}" data-id="${id}">${l}</a>`).join('');
+const links=[...document.querySelectorAll('nav a')];
+addEventListener('scroll',()=>{let cur=SECTIONS[0][0];
+  SECTIONS.forEach(([id])=>{if(document.getElementById(id).getBoundingClientRect().top<160)cur=id;});
+  links.forEach(a=>a.classList.toggle('on',a.dataset.id===cur));});
+
+const CLAY='#B4785B',LINE='#E7D8C4',INK='#4A3830',DIM='#A08B79',SAGE='#7FA37A',ROSE='#C97B7B',SUN='#E8B95C';
+const svgEl=(w,h,inner)=>`<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block">${inner}</svg>`;
+
+/* =================================================================
+   THE CORPUS — ten chunks of one HR handbook.
+   d / ang place each chunk on the 2D embedding map; every cosine
+   similarity on this page is derived from those positions, so
+   sections 01, 03, 04 and 06 cannot drift apart.
+   b = BM25 score for the canonical question.
+   r = cross-encoder rerank score for the canonical question.
+   ================================================================= */
+const CH=[
+ {id:'c1',sh:"casual '25",ti:"4.2 Casual Leave",pol:"Leave",yr:2025,sec:"4.2",d:22.8,ang:40,b:13.8,r:.96,
+  tx:"Casual leave is credited at 12 days per calendar year on 1 January and is meant for short, unplanned absences. Applications are raised on the HR portal at least one working day in advance. Any casual leave unused on 31 December lapses. It is not carried forward and is not encashable."},
+ {id:'c2',sh:"earned '25",ti:"4.4 Earned Leave",pol:"Leave",yr:2025,sec:"4.4",d:9.2,ang:45,b:6.2,r:.34,
+  tx:"Earned leave is credited at 18 days per calendar year on 1 January and is meant for planned absences. Applications are raised on the HR portal at least seven working days in advance. Earned leave unused on 31 December may be carried forward up to a maximum of 30 days into the following calendar year."},
+ {id:'c3',sh:"casual '23",ti:"4.2 Casual Leave (2023 edition)",pol:"Leave",yr:2023,sec:"4.2",d:10.3,ang:200,b:12.9,r:.71,
+  tx:"Employees are entitled to 10 days of casual leave per calendar year. Unused casual leave lapses at the end of the calendar year and is not carried forward."},
+ {id:'c4',sh:"the table",ti:"4.3 Leave at a glance",pol:"Leave",yr:2025,sec:"4.3",d:19.3,ang:160,b:8.1,r:.88,
+  tx:"Leave type | Per year | Carry forward | Encashable · Casual leave | 12 days | None, lapses | No · Earned leave | 18 days | Up to 30 days | Yes, on exit · Sick leave | 8 days | Up to 8 days | No"},
+ {id:'c5',sh:"sick leave",ti:"4.5 Sick Leave",pol:"Leave",yr:2025,sec:"4.5",d:18.1,ang:320,b:4.0,r:.12,
+  tx:"Sick leave is credited at 8 days per calendar year. Absences beyond two consecutive days need a medical certificate. Up to 8 days of unused sick leave may be carried forward into the following year."},
+ {id:'c6',sh:"applying",ti:"4.1 Applying for leave",pol:"Leave",yr:2025,sec:"4.1",d:19.6,ang:250,b:4.7,r:.09,
+  tx:"All leave is applied for on the HR portal under My Leave. Your reporting manager approves or declines within two working days. Leave taken without an approved application is treated as loss of pay."},
+ {id:'c7',sh:"claims",ti:"7.1 Expense reimbursement",pol:"Reimbursement",yr:2025,sec:"7.1",d:42,ang:215,b:0.8,r:.02,
+  tx:"Claims are submitted within 30 days of the expense with original receipts attached. Any claim above ₹5,000 needs your manager's approval before submission."},
+ {id:'c8',sh:"LTA",ti:"7.4 Leave Travel Allowance",pol:"Reimbursement",yr:2025,sec:"7.4",d:33.3,ang:285,b:2.6,r:.05,
+  tx:"LTA may be claimed twice in a block of four calendar years against travel within India. You must be on approved leave for the travel dates being claimed."},
+ {id:'c9',sh:"conduct",ti:"2.3 Code of conduct",pol:"Conduct",yr:2025,sec:"2.3",d:47,ang:130,b:0,r:.01,
+  tx:"Employees must declare any outside directorship, consulting engagement or financial interest in a vendor. Gifts above ₹2,500 from a vendor are declined or surrendered to HR."},
+ {id:'c10',sh:"notice",ti:"9.1 Notice period",pol:"Exit",yr:2025,sec:"9.1",d:21.8,ang:95,b:8.4,r:.21,
+  tx:"Employees serving notice may not avail casual leave during the notice period. Any earned leave balance is encashed with the final settlement at basic pay."}
+];
+const QX=50,QY=50;
+CH.forEach(c=>{const a=c.ang*Math.PI/180;c.x=QX+c.d*Math.cos(a);c.y=QY-c.d*Math.sin(a);});
+const byId=Object.fromEntries(CH.map(c=>[c.id,c]));
+const K=0.004375;                                   /* map units → cosine */
+const simQ = c => +(0.98-K*c.d).toFixed(3);
+const simPair = (a,b) => +(0.98-K*Math.hypot(a.x-b.x,a.y-b.y)).toFixed(3);
+const meta = c => `${c.pol} · ${c.yr} · §${c.sec}`;
+const denseOrder = pool => [...pool].sort((a,b)=>a.d-b.d);
+const bmOrder    = pool => [...pool].sort((a,b)=>b.b-a.b||a.d-b.d);
+const QUESTION="How many casual leaves do I get, and do unused ones carry over?";
+
+/* ---------- 01 the naive pipeline ---------- */
+const STAGES=["embed the question","search 10 chunks","cosine top-k = 3","stuff the prompt","generate"];
+let p1t=[];
+function p1clear(){p1t.forEach(clearTimeout);p1t=[];}
+function p1stages(n){
+  document.getElementById('p1stages').innerHTML=STAGES.map((s,i)=>
+    `<span class="pst ${i<n?'done':i===n?'live':''}">${i<n?'✓ ':''}${s}</span>`).join('');
+}
+function p1reset(){
+  p1clear();p1stages(-1);
+  document.getElementById('p1out').innerHTML='';
+  document.getElementById('p1run').disabled=false;
+  document.getElementById('p1take').innerHTML="Ten chunks. Top-k = 3. No filters, no reranker, no hybrid — the pipeline most demos ship with.";
+}
+function hitCard(c,rank,cls){
+  return `<div class="hit ${cls||''}"><div class="rk">${rank}</div>
+    <div class="bd"><div class="ti">${c.ti}</div><div class="mt">${meta(c)}</div>
+    <div class="tx">${c.tx}</div></div>
+    <div class="sc">${simQ(c).toFixed(3)}<s>cosine</s></div></div>`;
+}
+function p1run(){
+  p1clear();document.getElementById('p1run').disabled=true;
+  const out=document.getElementById('p1out');out.innerHTML='';
+  const ord=denseOrder(CH);
+  STAGES.forEach((s,i)=>p1t.push(setTimeout(()=>p1stages(i),i*430)));
+  p1t.push(setTimeout(()=>{
+    p1stages(STAGES.length);
+    out.innerHTML=`<div style="font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--dim);margin:18px 0 8px">RETRIEVED — TOP 3 BY COSINE</div>`
+      +ord.slice(0,3).map((c,i)=>hitCard(c,i+1,i===0?'bad':'')).join('')
+      +`<div class="ans bad"><span class="al">THE ANSWER YOUR USER GETS</span>
+         You get <b>18 days</b> of leave per calendar year, and unused days <b>carry forward up to a maximum of 30 days</b> into the next year.
+         <div style="margin-top:8px;font-family:var(--mono);font-size:.7rem;color:#8E4646">cited: §4.4 Earned Leave · fluent · confident · wrong policy</div></div>
+       <div class="row"><button class="btn ghost" id="p1where">Where was the right answer?</button></div>`;
+    document.getElementById('p1where').onclick=p1where;
+  },STAGES.length*430+260));
+}
+function p1where(){
+  const ord=denseOrder(CH);
+  const rank=ord.findIndex(c=>c.id==='c1')+1;
+  document.getElementById('p1out').innerHTML=
+    `<div style="font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--dim);margin:18px 0 8px">THE FULL RANKING — ALL TEN CHUNKS</div>`
+    +ord.map((c,i)=>`<div class="rkrow ${c.id==='c1'?'gold':c.id==='c2'?'wrong':''}">
+        <div class="rk">${i+1}</div>
+        <div><div class="ti">${c.ti}</div><div class="mt">${meta(c)}</div></div>
+        <div class="sc">${simQ(c).toFixed(3)}<s>cosine</s></div></div>`).join('')
+    +`<div class="ans good"><span class="al">WHAT §4.2 ACTUALLY SAYS — RANK ${rank}</span>
+        <b>12 days</b> a year, and unused days <b>lapse on 31 December</b>. They do not carry forward.</div>
+      <div class="row"><button class="btn ghost" id="p1why">Why did it lose?</button></div>`;
+  document.getElementById('p1why').onclick=p1why;
+  document.getElementById('p1take').innerHTML=
+    `The right chunk was in the index the whole time, sitting at <b>rank ${rank}</b>. Top-k = 3 never saw it. Nobody noticed for a month, because the answer reads perfectly.`;
+}
+function p1why(){
+  const c1=byId.c1,c2=byId.c2;
+  document.getElementById('p1out').innerHTML+=
+   `<div class="side">
+      <div class="para"><h5>§4.2 Casual Leave — rank 7</h5>
+        Casual leave <em class="sh">is credited at</em> <b>12</b> <em class="sh">days per calendar year on 1 January and is meant for</em> short, unplanned <em class="sh">absences. Applications are raised on the HR portal at least</em> one <em class="sh">working day in advance.</em> Any casual leave <em class="sh">unused on 31 December</em> lapses.</div>
+      <div class="para"><h5>§4.4 Earned Leave — rank 1</h5>
+        Earned leave <em class="sh">is credited at</em> <b>18</b> <em class="sh">days per calendar year on 1 January and is meant for</em> planned <em class="sh">absences. Applications are raised on the HR portal at least</em> seven <em class="sh">working days in advance.</em> Earned leave <em class="sh">unused on 31 December</em> may be carried forward.</div>
+    </div>
+    <div class="verdict no" style="margin-top:14px">Highlighted words are identical in both paragraphs. Cosine similarity between these two chunks: <b>${simPair(c1,c2).toFixed(3)}</b> — the closest pair in the whole corpus, closer to each other than either is to the question. Two policies written by the same person in the same template are <b>near-identical in embedding space</b>, and the only words that distinguish them are “casual”, “earned”, “12” and “18”.</div>`;
+  document.getElementById('p1why').disabled=true;
+  document.getElementById('p1take').innerHTML=
+    `Every fix in this drop starts here. <b>Embedding distance ranked the template, not the policy.</b> A keyword search would have caught “casual leave” instantly — that's section 04.`;
+}
+document.getElementById('p1run').onclick=p1run;
+document.getElementById('p1reset').onclick=p1reset;
+p1reset();
+
+/* ---------- 02 chunking ---------- */
+const PAGE=[
+ {h:"4.2 Casual Leave",t:"Casual leave is credited at 12 days per calendar year on 1 January and is meant for short, unplanned absences such as a domestic emergency or a day of ill health that does not need a medical certificate. Applications are raised on the HR portal at least one working day in advance, except in an emergency, and need your reporting manager's approval. Casual leave may not be clubbed with earned leave in a single application and may not be taken for more than three consecutive working days. Employees who join part way through the year are credited on a pro rata basis, rounded up to the nearest half day. Any casual leave unused on 31 December lapses. It is not carried forward and is not encashable."},
+ {h:"4.3 Leave at a glance",t:"Leave type | Per year | Carry forward | Encashable | Casual leave | 12 days | None, lapses | No | Earned leave | 18 days | Up to 30 days | Yes, on exit | Sick leave | 8 days | Up to 8 days | No"},
+ {h:"4.4 Earned Leave",t:"Earned leave is credited at 18 days per calendar year on 1 January and is meant for planned absences such as a holiday, a wedding or travel that you can schedule ahead. Applications are raised on the HR portal at least seven working days in advance, except in an emergency, and need your reporting manager's approval. Earned leave may be clubbed with a public holiday and may be taken for up to fifteen consecutive working days with skip level approval. Employees who join part way through the year are credited on a pro rata basis, rounded up to the nearest half day. Earned leave unused on 31 December may be carried forward up to a maximum of 30 days into the following calendar year. Any balance beyond 30 days lapses."}
+];
+const WD=[];
+PAGE.forEach((b,bi)=>{
+  b.h.split(/\s+/).forEach(w=>WD.push({w,b:bi,hd:true}));
+  b.t.split(/\s+/).forEach(w=>WD.push({w,b:bi,hd:false}));
+});
+const WS=WD.map(o=>o.w);
+function findSpan(ph){
+  const p=ph.split(/\s+/);
+  for(let i=0;i<=WS.length-p.length;i++){
+    let ok=true;
+    for(let j=0;j<p.length;j++) if(WS[i+j]!==p[j]){ok=false;break;}
+    if(ok) return [i,i+p.length-1];
+  }
+  return null;
+}
+const SP_A=findSpan("12 days per calendar year");                        /* the entitlement */
+const SP_B=findSpan("It is not carried forward and is not encashable."); /* the carry rule  */
+const SP_D=findSpan("18 days per calendar year");                        /* earned leave    */
+const SP_C=findSpan("Casual leave | 12 days | None, lapses | No");       /* the table row   */
+const TAB0=findSpan("Leave type | Per year")[0], TAB1=TAB0+48;
+let c2struct=false;
+function makeChunks(){
+  if(c2struct){
+    const out=[];let i=0;
+    PAGE.forEach((b,bi)=>{
+      const n=b.h.split(/\s+/).length+b.t.split(/\s+/).length;
+      out.push([i,i+n-1]);i+=n;});
+    return out;
+  }
+  const tok=+document.getElementById('c2size').value;
+  const ov=+document.getElementById('c2overlap').value;
+  const wpc=Math.max(8,Math.round(tok*0.75));
+  const step=Math.max(1,Math.round(wpc*(1-ov/100)));
+  const out=[];let i=0;
+  while(i<WS.length){ out.push([i,Math.min(WS.length-1,i+wpc-1)]);
+    if(i+wpc>=WS.length) break; i+=step; }
+  return out;
+}
+const holds=(ch,sp)=>ch[0]<=sp[0]&&ch[1]>=sp[1];
+const TINT=['rgba(180,120,91,.26)','rgba(127,163,122,.30)','rgba(232,185,92,.40)','rgba(201,123,123,.26)',
+            'rgba(154,95,68,.17)','rgba(127,163,122,.16)'];
+function draw2(){
+  const cs=makeChunks();
+  const tok=+document.getElementById('c2size').value, ov=+document.getElementById('c2overlap').value;
+  document.getElementById('c2sv').textContent=c2struct?"— by heading —":tok+" tokens";
+  document.getElementById('c2ov').textContent=c2struct?"—":ov+"%";
+  document.getElementById('c2size').disabled=c2struct;
+  document.getElementById('c2overlap').disabled=c2struct;
+
+  const own=WS.map(()=>[]);
+  cs.forEach((c,ci)=>{for(let i=c[0];i<=c[1];i++) own[i].push(ci);});
+  document.getElementById('c2text').innerHTML=WD.map((o,i)=>{
+    const os=own[i], first=os.length?os[0]:0;
+    const key=(i>=SP_A[0]&&i<=SP_A[1])||(i>=SP_B[0]&&i<=SP_B[1])||(i>=SP_C[0]&&i<=SP_C[1]);
+    const brk=cs.some(c=>c[0]===i)&&i>0;
+    return `<w class="${o.hd?'hd ':''}${os.length>1?'ov ':''}${key?'key ':''}${brk?'brk':''}"
+       style="background:${TINT[first%TINT.length]}">${o.w}</w> `;
+  }).join('');
+  document.getElementById('c2legend').innerHTML=cs.map((c,i)=>
+    `<span class="clg" style="background:${TINT[i%TINT.length]};border-color:${TINT[i%TINT.length]}">chunk ${i+1} · ${c[1]-c[0]+1} words</span>`).join('')
+    +(ov>0&&!c2struct?`<span class="clg" style="box-shadow:inset 0 -2px 0 ${CLAY}">underlined = in two chunks</span>`:'');
+
+  const okAB=cs.some(c=>holds(c,SP_A)&&holds(c,SP_B));
+  const okRow=cs.some(c=>holds(c,SP_C));
+  let dens=0, ownA=cs.filter(c=>holds(c,SP_A));
+  ownA.forEach(c=>{let n=0;for(let i=c[0];i<=c[1];i++) if(WD[i].b===0)n++;
+    dens=Math.max(dens,n/(c[1]-c[0]+1));});
+  dens=Math.round(dens*100);
+  const okDens=dens>=60;
+  const splitRow=!okRow;
+  const cutIn=cs.filter(c=>c[0]>TAB0&&c[0]<=TAB1).length;
+
+  document.getElementById('c2n').textContent=cs.length;
+  document.getElementById('c2w').textContent=c2struct?'varies':Math.round(tok*0.75);
+  document.getElementById('c2d').textContent=dens+'%';
+  document.getElementById('c2checks').innerHTML=[
+   [okAB,"“12 days” and the lapse rule land in one chunk",
+     okAB?"Both halves of the answer are retrievable together.":"They are in different chunks. Whichever one you retrieve, half the answer is missing."],
+   [okRow,"The casual-leave table row survives whole",
+     okRow?"“Casual leave | 12 days | None, lapses | No” is intact.":"A chunk boundary cuts straight through the row. The model gets a header with no value, or a value with no label."],
+   [okDens,"The chunk is still about casual leave ("+dens+"% of its words)",
+     okDens?"Focused enough to rank on the question that matters.":"This chunk now covers casual, earned and sick leave. It matches everything a bit and nothing well."]
+  ].map(([ok,t,s])=>`<div class="chk ${ok?'y':'n'}"><i>${ok?'✓':'✕'}</i><span>${t}<s>${s}</s></span></div>`).join('');
+
+  const v=document.getElementById('c2v');
+  const n=[okAB,okRow,okDens].filter(Boolean).length;
+  if(c2struct){v.className='verdict ok';
+    v.innerHTML="Split on headings instead of a token count and all three pass at once — the table is one chunk because it is one thing. <b>Structure-aware splitting beats fixed-size on anything with headings, tables or clauses</b>, which is most real documents.";}
+  else if(n===3){v.className='verdict ok';
+    v.innerHTML="All three pass — you have hand-tuned a slider into a window about 100 tokens wide. It holds for <b>this page</b>. The next document in the folder has its table somewhere else.";}
+  else if(!okDens){v.className='verdict no';
+    v.innerHTML="Big chunks stop failing on boundaries and start failing on focus. At "+dens+"% casual leave, this chunk's vector is an average of three policies — <b>it dilutes toward the middle of the page and ranks below a sharper, shorter chunk</b>. That is how §4.2 ended up at rank 7.";}
+  else if(splitRow&&cutIn>0){v.className='verdict no';
+    v.innerHTML="A boundary lands inside the table. <b>The carry-forward rule is now split across two chunks</b> and neither one answers the question — the first ends with a label, the second starts with a value.";}
+  else{v.className='verdict no';
+    v.innerHTML="The entitlement and the carry-forward rule are in <b>different chunks</b>. Retrieve either one and the model has half the answer, which it will finish from memory.";}
+
+  document.getElementById('c2take').innerHTML= ov>0&&!c2struct&&okRow&&cutIn>0
+   ? "Overlap rescued the table row — the second chunk starts early enough to hold it whole. <b>That is the honest limit of overlap</b>: it patches short items across a boundary and does nothing for the focus problem above. Treat it as the old reflex, not the fix."
+   : "Overlap of 10–20% is the traditional patch and its value is genuinely contested — it inflates the index for a boundary problem. The stronger fixes are structure-aware splitting, parent-document retrieval, and prepending context before embedding: <b>Anthropic reports contextual embeddings cut retrieval failures by 35%</b>, recommended for knowledge bases over about 200K tokens.";
+}
+document.getElementById('c2sw').innerHTML=
+  `<button class="sw" id="c2structsw"><span class="knob"></span><span class="sl"><b>Structure-aware splitting</b><s>split on headings and keep tables whole</s></span></button>`;
+document.getElementById('c2structsw').onclick=function(){
+  c2struct=!c2struct;this.classList.toggle('on',c2struct);draw2();};
+document.getElementById('c2size').addEventListener('input',draw2);
+document.getElementById('c2overlap').addEventListener('input',draw2);
+draw2();
+
+/* ---------- 03 embedding map ---------- */
+let c3sel='c1';
+const PX=x=>20+x*3.8, PY=y=>10+y*3.8;
+function draw3(){
+  const k=+document.getElementById('c3k').value;
+  document.getElementById('c3kv').textContent=k;
+  const ord=denseOrder(CH);
+  const inCut=new Set(ord.slice(0,k).map(c=>c.id));
+  const rad=ord[k-1].d*3.8;
+  const sel=byId[c3sel];
+  const nbs=CH.filter(c=>c.id!==c3sel).map(c=>({c,s:simPair(sel,c)})).sort((a,b)=>b.s-a.s);
+  const near=new Set(nbs.slice(0,3).map(o=>o.c.id));
+
+  let g='';
+  /* hand-drawn axes */
+  g+=`<path d="M30,${PY(96)} C140,${PY(95.4)} 280,${PY(96.6)} 400,${PY(95.8)}" fill="none" stroke="${LINE}" stroke-width="2" stroke-linecap="round"/>`;
+  g+=`<path d="M26,14 C25.4,120 26.6,270 25.8,${PY(96)}" fill="none" stroke="${LINE}" stroke-width="2" stroke-linecap="round"/>`;
+  g+=`<text x="398" y="${PY(96)+16}" text-anchor="end" fill="${DIM}">projected dimension 1</text>`;
+  /* top-k boundary */
+  g+=`<circle cx="${PX(QX)}" cy="${PY(QY)}" r="${rad}" fill="rgba(180,120,91,.06)" stroke="${CLAY}" stroke-width="1.6" stroke-dasharray="5 5"/>`;
+  /* neighbour spokes from the selected chunk */
+  nbs.slice(0,3).forEach(o=>{
+    g+=`<path d="M${PX(sel.x)},${PY(sel.y)} L${PX(o.c.x)},${PY(o.c.y)}" stroke="${SAGE}" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/>`;});
+  /* the query */
+  g+=`<path d="M${PX(QX)-7},${PY(QY)-7} L${PX(QX)+7},${PY(QY)+7} M${PX(QX)+7},${PY(QY)-7} L${PX(QX)-7},${PY(QY)+7}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
+  /* fixed legend — never collides with a point label */
+  g+=`<path d="M30,22 L38,30 M38,22 L30,30" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`
+   + `<text x="44" y="30" fill="${INK}" font-weight="700">the question</text>`
+   + `<circle cx="34" cy="46" r="5.5" fill="none" stroke="${CLAY}" stroke-width="1.6" stroke-dasharray="3 3"/>`
+   + `<text x="44" y="50" fill="${CLAY}">top-k = ${k}</text>`;
+  /* chunks */
+  CH.forEach(c=>{
+    const on=inCut.has(c.id), s=c.id===c3sel, nn=near.has(c.id);
+    const fill=c.id==='c1'?SAGE:(c.yr===2023?SUN:CLAY);
+    const right=c.x>=QX;
+    g+=`<circle cx="${PX(c.x)}" cy="${PY(c.y)}" r="${s?9:6.5}" fill="${fill}" opacity="${on?1:.3}"
+         stroke="${s?INK:(nn?SAGE:'#FFFBF3')}" stroke-width="${s?2.6:2}" data-id="${c.id}" style="cursor:pointer"/>`;
+    g+=`<text x="${PX(c.x)+(right?12:-12)}" y="${PY(c.y)+4}" text-anchor="${right?'start':'end'}"
+         fill="${INK}" opacity="${on?1:.45}" data-id="${c.id}" style="cursor:pointer">${c.sh}</text>`;});
+  document.getElementById('c3map').innerHTML=svgEl(420,400,g);
+  document.querySelectorAll('#c3map [data-id]').forEach(e=>e.onclick=()=>{c3sel=e.dataset.id;draw3();});
+
+  document.getElementById('c3sel').textContent="NEAREST NEIGHBOURS OF — "+sel.ti.toUpperCase();
+  document.getElementById('c3nb').innerHTML=
+    `<div class="nb self"><span>the question itself</span><span>${simQ(sel).toFixed(3)}</span></div>`
+    +nbs.slice(0,4).map(o=>`<div class="nb"><span>${o.c.ti}</span><b>${o.s.toFixed(3)}</b></div>`).join('');
+
+  const r1=ord.findIndex(c=>c.id==='c1')+1;
+  const v=document.getElementById('c3v');
+  if(inCut.has('c1')){v.className='verdict ok';
+    v.innerHTML=`§4.2 Casual Leave is inside the cut — but only because k is now <b>${k}</b>. You are reading ${k} chunks into the prompt to catch one, and chunks 1 and 2 still contradict it.`;}
+  else{v.className='verdict no';
+    v.innerHTML=`§4.2 Casual Leave sits at <b>rank ${r1}</b>, outside top-${k}. Normal k before reranking is 5–20 — so the usual fix here is to widen k and then narrow it properly, which is section 04.`;}
+
+  document.getElementById('c3take').innerHTML = c3sel==='c1'||c3sel==='c2'
+   ? `Casual leave and earned leave are each other's <b>nearest neighbour in the entire corpus</b>, at ${simPair(byId.c1,byId.c2).toFixed(3)} — closer to one another than either is to the question. Cosine similarity is doing its job perfectly. <b>Its job is not correctness.</b>`
+   : `Notice how tightly the leave chunks cluster: every cosine in the top seven sits between 0.88 and 0.94. <b>A score that high looks like a confident hit</b> — and seven of them being that high is exactly why you cannot threshold your way out of this.`;
+}
+document.getElementById('c3k').addEventListener('input',draw3);
+draw3();
+
+/* ---------- 04 hybrid + rerank ---------- */
+const O4={bm25:false,rrf:false,rerank:false,yearf:false};
+const SW4=[
+ {k:'bm25',l:'BM25 keyword search',d:'score exact terms alongside the vectors'},
+ {k:'rrf',l:'RRF fusion',d:'merge the two rankings with 1/(k + rank)'},
+ {k:'rerank',l:'Cross-encoder rerank',d:'read question and chunk together, top 25 → 3'}
+];
+function rank04(){
+  let pool=CH.slice();
+  if(O4.yearf) pool=pool.filter(c=>c.yr===2025);
+  const dR={},bR={};
+  denseOrder(pool).forEach((c,i)=>dR[c.id]=i+1);
+  bmOrder(pool).forEach((c,i)=>bR[c.id]=i+1);
+  let rows=pool.map(c=>({c,dR:dR[c.id],bR:bR[c.id],rrf:1/(60+dR[c.id])+1/(60+bR[c.id])}));
+  const fused=O4.bm25&&O4.rrf;
+  if(fused) rows.sort((x,y)=>y.rrf-x.rrf||x.dR-y.dR);
+  else rows.sort((x,y)=>x.dR-y.dR);
+  if(O4.rerank) rows=rows.slice(0,25).sort((x,y)=>y.c.r-x.c.r);
+  rows.forEach((r,i)=>r.rank=i+1);
+  return {rows,fused,dR,bR};
+}
+function draw4(){
+  document.getElementById('c4sw').innerHTML=SW4.map(s=>
+    `<button class="sw ${O4[s.k]?'on':''}" data-k="${s.k}"><span class="knob"></span>
+       <span class="sl"><b>${s.l}</b><s>${s.d}</s></span></button>`).join('');
+  document.querySelectorAll('#c4sw .sw').forEach(b=>b.onclick=()=>{O4[b.dataset.k]=!O4[b.dataset.k];draw4();});
+  document.getElementById('c4year').innerHTML=
+    `<button class="ychip ${O4.yearf?'on':''}" id="c4yf">year = 2025 ${O4.yearf?'✓':''}</button>
+     <span class="ychip" style="border-style:dashed">metadata filter · drops the 2023 edition</span>`;
+  document.getElementById('c4yf').onclick=()=>{O4.yearf=!O4.yearf;draw4();};
+
+  const {rows,fused,dR,bR}=rank04();
+  const gold=rows.find(r=>r.c.id==='c1');
+  document.getElementById('c4rows').innerHTML=rows.map(r=>{
+    let sc,lb;
+    if(O4.rerank){sc=r.c.r.toFixed(2);lb='rerank';}
+    else if(fused){sc=r.rrf.toFixed(4);lb='RRF';}
+    else {sc=simQ(r.c).toFixed(3);lb='cosine';}
+    const badge=(O4.bm25&&!fused&&r.bR<=3)?`<span class="tag">BM25 #${r.bR}</span>`:'';
+    return `<div class="rkrow ${r.c.id==='c1'?'gold':(r.rank===1&&r.c.id!=='c1'?'wrong':'')}">
+      <div class="rk">${r.rank}</div>
+      <div><div class="ti">${r.c.ti}${badge}</div><div class="mt">${meta(r.c)} · dense #${r.dR} · bm25 #${r.bR}</div></div>
+      <div class="sc">${sc}<s>${lb}</s></div></div>`;}).join('');
+
+  const v=document.getElementById('c4v');
+  const gr=gold?gold.rank:0;
+  if(O4.rerank&&gr===1){v.className='verdict ok';
+    v.innerHTML=`Rank <b>1</b>. The cross-encoder read the question and each chunk <i>together</i> — so it can tell that a paragraph about earned leave is not an answer about casual leave, which a vector distance never could. Cost: roughly <b>80–150ms</b> for normal-sized chunks, and usually the best quality-per-effort move in the pipeline.`;}
+  else if(fused&&gr<=3){v.className='verdict mid';
+    v.innerHTML=`Rank <b>${gr}</b>, up from 7. BM25 put §4.2 at <b>#1 lexically</b> because “casual leave” is an exact phrase it can count, and RRF let that outvote the dense ranking. Still not first — ${O4.yearf?'§4.3 and §4.4 are above it':'the 2023 edition is sitting at rank 1'}. Now rerank.`;}
+  else if(O4.bm25&&!fused){v.className='verdict no';
+    v.innerHTML=`BM25 is running and it has <b>already found the answer at #1</b> — look at the badges. Nothing is fusing the two lists, so the dense ranking still decides the order and §4.2 stays at rank ${gr}. Turn on RRF.`;}
+  else if(O4.rrf&&!O4.bm25){v.className='verdict no';
+    v.innerHTML=`RRF with one list is just that list. Fusion needs <b>two different retrievers disagreeing</b> — turn on BM25.`;}
+  else{v.className='verdict no';
+    v.innerHTML=`Dense only. §4.2 Casual Leave sits at rank <b>${gr}</b> and ${O4.yearf?'§4.4 Earned Leave':'the wrong policy'} is at rank 1. This is the pipeline from section 01.`;}
+
+  const dr=dR['c1'], br=bR['c1'], c4r=rows.find(r=>r.c.id==='c4');
+  document.getElementById('c4calc').innerHTML=
+   `<span class="fx">RRF score = Σ 1 / (k + rank),&nbsp; k = 60</span><br>
+    <b>§4.2 Casual Leave</b> → dense #${dr}, bm25 #${br} → 1/(60+${dr}) + 1/(60+${br}) = ${(1/(60+dr)).toFixed(5)} + ${(1/(60+br)).toFixed(5)} = <b>${(1/(60+dr)+1/(60+br)).toFixed(5)}</b><br>
+    <b>§4.3 Leave at a glance</b> → dense #${dR['c4']}, bm25 #${bR['c4']} → ${(1/(60+dR['c4'])+1/(60+bR['c4'])).toFixed(5)}
+    <span style="color:var(--dim)"> — ${Math.abs((1/(60+dr)+1/(60+br))-(1/(60+dR['c4'])+1/(60+bR['c4']))).toFixed(5)} apart</span><br>
+    <span style="color:var(--dim)">k = 60 is the near-universal default. It flattens the gap between rank 1 and rank 2 so a single confident retriever cannot dominate — and because RRF only ever reads ranks, the two scoring systems never need calibrating against each other.</span>`;
+
+  document.getElementById('c4take').innerHTML = O4.yearf
+   ? "The 2023 edition is gone — and notice that <b>no embedding and no reranker could have removed it</b>. Both of them think it is an excellent answer, because it is, to last year's question. A <b>metadata filter</b> fixed in one line what a better model never would. Store year, policy, version and source at index time."
+   : (O4.rerank
+     ? "Retrieve wide and cheap, then narrow precisely — <b>about 25 down to 3</b> is a normal funnel. One thing rerank cannot fix is still sitting in your results: the <b>2023 edition</b> of the same policy, saying 10 days. Try the year filter."
+     : "Anthropic reports that adding contextual BM25 to contextual embeddings cut retrieval failures by <b>49%</b>, and adding reranking on top took it to <b>67%</b>. Their figures, their corpus — but the ordering of the fixes is the part to take away.");
+}
+draw4();
+
+/* ---------- 05 lost in the middle ---------- */
+const BASE5=['c3','c2','c4','c10','c1','c5','c6','c8','c7'];
+let ord5=BASE5.slice(), fewer5=false;
+const att=(p,n)=>{ if(n<2) return 1;
+  const t=(p-1)/(n-1), f=Math.max(0,1-4*t*(1-t));
+  return (0.30+0.70*Math.pow(f,0.7))*(1-0.12*t); };
+function list5(){
+  if(!fewer5) return ord5;
+  return ord5.slice().sort((a,b)=>byId[b].r-byId[a].r).slice(0,3);
+}
+function draw5(){
+  const L=list5(), n=L.length;
+  /* attention curve */
+  let pts=[];
+  for(let i=0;i<=80;i++){
+    const t=i/80, f=Math.max(0,1-4*t*(1-t));
+    const a=(0.30+0.70*Math.pow(f,0.7))*(1-0.12*t);
+    const wob=Math.sin(t*11)*1.4;
+    pts.push([30+t*360, 128-a*96+wob]);
+  }
+  let g=`<path d="M26,128 L400,128" stroke="${LINE}" stroke-width="2" stroke-linecap="round"/>`;
+  g+=`<path d="M26,128 L26,20" stroke="${LINE}" stroke-width="2" stroke-linecap="round"/>`;
+  g+=`<text x="30" y="16" fill="${DIM}">model attention</text>`;
+  g+=`<text x="30" y="145" fill="${DIM}">first</text><text x="400" y="145" text-anchor="end" fill="${DIM}">last</text>`;
+  g+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${CLAY}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  L.forEach((id,i)=>{
+    const a=att(i+1,n), x=30+(n<2?0:(i/(n-1))*360), y=128-a*96;
+    const g0=id==='c1';
+    g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${g0?7:4.5}" fill="${g0?SAGE:'#D2A98E'}" stroke="#FFFBF3" stroke-width="2"/>`;
+    if(g0) g+=`<text x="${x.toFixed(1)}" y="${(y-13).toFixed(1)}" text-anchor="middle" fill="${SAGE}" font-weight="700">§4.2</text>`;
+  });
+  document.getElementById('c5curve').innerHTML=svgEl(420,155,g);
+
+  /* rows */
+  document.getElementById('c5rows').innerHTML=L.map((id,i)=>{
+    const c=byId[id], a=att(i+1,n);
+    return `<div class="ctxrow ${id==='c1'?'gold':''}">
+      <div class="pn">${i+1}</div>
+      <div><div class="ti">${c.ti}</div><div class="mt">relevance ${c.r.toFixed(2)} · attention ${a.toFixed(2)} · used ${(a*c.r).toFixed(2)}</div></div>
+      <div class="abar"><i style="width:${(a*100).toFixed(0)}%"></i></div>
+      <div class="mv">
+        <button data-m="up" data-i="${i}" ${fewer5||i===0?'disabled':''} title="move up">▲</button>
+        <button data-m="dn" data-i="${i}" ${fewer5||i===n-1?'disabled':''} title="move down">▼</button>
+        <button class="top" data-m="top" data-i="${i}" ${fewer5||i===0?'disabled':''}>to top</button>
+      </div></div>`;}).join('');
+  document.querySelectorAll('#c5rows .mv button').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, m=b.dataset.m;
+    if(m==='up'){[ord5[i-1],ord5[i]]=[ord5[i],ord5[i-1]];}
+    if(m==='dn'){[ord5[i+1],ord5[i]]=[ord5[i],ord5[i+1]];}
+    if(m==='top'){const x=ord5.splice(i,1)[0];ord5.unshift(x);}
+    draw5();});
+
+  /* what the model actually answers from */
+  let best=null;
+  L.forEach((id,i)=>{const s=att(i+1,n)*byId[id].r; if(!best||s>best.s) best={id,s,p:i+1};});
+  const good=best.id==='c1'||best.id==='c4';
+  const SAY={
+    c1:"You get <b>12 days</b> of casual leave a year. Unused days <b>lapse on 31 December</b> — they do not carry forward. <i>(§4.2, 2025)</i>",
+    c4:"Casual leave: <b>12 days</b> a year, <b>no carry forward</b>, not encashable. <i>(§4.3 leave table, 2025)</i>",
+    c3:"You get <b>10 days</b> of casual leave a year and unused days lapse at year end. <i>(§4.2, <b>2023 edition</b>)</i>",
+    c2:"You get <b>18 days</b> a year and can carry forward up to 30 days. <i>(§4.4 Earned Leave — wrong policy)</i>",
+    c10:"Casual leave cannot be availed during your notice period. <i>(§9.1 — does not answer the question)</i>",
+    c5:"You get <b>8 days</b> and up to 8 may be carried forward. <i>(§4.5 Sick Leave — wrong policy)</i>",
+    c6:"Leave is applied for on the HR portal. <i>(§4.1 — does not answer the question)</i>",
+    c7:"Claims are submitted within 30 days. <i>(§7.1 — unrelated)</i>",
+    c8:"LTA may be claimed twice in four years. <i>(§7.4 — unrelated)</i>"
+  };
+  const gp=L.indexOf('c1')+1;
+  document.getElementById('c5ans').innerHTML=
+    `<div class="ans ${good?'good':'bad'}"><span class="al">WHAT THE MODEL ANSWERS — DRAWN FROM POSITION ${best.p} OF ${n}</span>
+      ${SAY[best.id]||''}</div>
+     <div class="verdict ${good?'ok':'no'}">${
+      good
+      ? (fewer5
+        ? `Three chunks instead of nine, strongest first. Every one of them is attended to — there is no middle left to lose things in. <b>Nine chunks was never nine times better.</b>`
+        : `§4.2 is at position <b>${gp}</b> and gets the model's full attention. Same chunks, same retrieval, same model — <b>only the order changed</b>.`)
+      : `§4.2 is at position <b>${gp}</b> of ${n}, in the trough of the curve. Its relevance is ${byId.c1.r.toFixed(2)}, the highest in the prompt, and the model reaches past it to position ${best.p} anyway. <b>Retrieval succeeded and the answer is still wrong.</b>`}</div>`;
+
+  document.getElementById('c5take').innerHTML = fewer5
+   ? "This is the mitigation: <b>retrieve fewer, better chunks and put the strongest first</b>. It is also why the reranker in section 04 earns its latency — it is what lets you cut nine down to three without losing the answer."
+   : "A longer context window does not fix this. Liu et al. found the dip in 2023 and it has persisted through every context-window increase since — <b>“just paste everything in” trades a retrieval problem for an attention problem</b>.";
+}
+document.getElementById('c5sw').innerHTML=
+  `<button class="sw" id="c5fw"><span class="knob"></span><span class="sl"><b>Retrieve fewer, better</b><s>9 chunks down to 3, strongest first</s></span></button>`;
+document.getElementById('c5fw').onclick=function(){fewer5=!fewer5;this.classList.toggle('on',fewer5);draw5();};
+document.getElementById('c5rs').onclick=()=>{ord5=BASE5.slice();draw5();};
+draw5();
+
+/* ---------- 06 golden set ---------- */
+const GOLD=[
+ {q:"How many casual leaves do I get, and do unused ones carry over?",gold:'c1',stale:['c3'],conf:['c2'],tbl:true,
+  dense:[],bm25:[],rr:{}},
+ {q:"Can I carry forward my earned leave, and how much?",gold:'c2',stale:[],conf:['c1'],tbl:true,
+  dense:['c2','c1','c4','c5','c3','c10','c6','c8','c7','c9'],
+  bm25:['c2','c4','c10','c1','c5','c3','c6','c8','c7','c9'],
+  rr:{c2:.95,c4:.89,c1:.41,c5:.22,c10:.19,c3:.15,c6:.07,c8:.04,c7:.02,c9:.01}},
+ {q:"How many sick leaves can I carry forward?",gold:'c5',stale:[],conf:['c2'],tbl:true,
+  dense:['c2','c1','c3','c4','c6','c5','c10','c8','c7','c9'],
+  bm25:['c5','c4','c1','c2','c3','c6','c10','c8','c7','c9'],
+  rr:{c5:.94,c4:.86,c2:.24,c1:.18,c3:.11,c6:.06,c10:.05,c8:.03,c7:.02,c9:.01}},
+ {q:"What happens to my leave balance when I resign?",gold:'c10',stale:[],conf:[],tbl:false,
+  dense:['c2','c1','c6','c10','c5','c3','c4','c8','c7','c9'],
+  bm25:['c10','c2','c1','c6','c3','c5','c4','c8','c7','c9'],
+  rr:{c10:.93,c2:.67,c1:.31,c6:.18,c4:.12,c5:.09,c3:.06,c8:.03,c7:.02,c9:.01}},
+ {q:"How long do I have to submit a reimbursement claim?",gold:'c7',stale:[],conf:[],tbl:false,
+  dense:['c7','c8','c9','c6','c10','c1','c2','c5','c3','c4'],
+  bm25:['c7','c8','c6','c9','c10','c1','c2','c5','c3','c4'],
+  rr:{c7:.97,c8:.44,c6:.12,c9:.08,c10:.05,c1:.03,c2:.03,c5:.02,c3:.02,c4:.01}}
+];
+/* question 1 reuses the corpus numbers exactly, so it can never drift */
+GOLD[0].dense=denseOrder(CH).map(c=>c.id);
+GOLD[0].bm25 =bmOrder(CH).map(c=>c.id);
+GOLD[0].rr   =Object.fromEntries(CH.map(c=>[c.id,c.r]));
+
+const O6={struct:false,hybrid:false,rerank:false,yearf:false,fewer:false};
+const SW6=[
+ {k:'struct',l:'Structure-aware chunks',d:'from section 02 — tables stay whole'},
+ {k:'hybrid',l:'Hybrid + RRF',d:'from section 04 — BM25 fused with dense'},
+ {k:'rerank',l:'Cross-encoder rerank',d:'from section 04 — 25 down to 3'},
+ {k:'yearf',l:'Year filter',d:'metadata — drop the 2023 edition'},
+ {k:'fewer',l:'Retrieve fewer, better',d:'from section 05 — 9 chunks to 3, strongest first'}
+];
+function runQ(g){
+  let ids=CH.map(c=>c.id);
+  if(O6.yearf) ids=ids.filter(i=>byId[i].yr===2025);
+  const dR={},bR={};
+  g.dense.filter(i=>ids.includes(i)).forEach((i,k)=>dR[i]=k+1);
+  g.bm25 .filter(i=>ids.includes(i)).forEach((i,k)=>bR[i]=k+1);
+  let ord=ids.slice();
+  if(O6.hybrid) ord.sort((a,b)=>(1/(60+dR[b])+1/(60+bR[b]))-(1/(60+dR[a])+1/(60+bR[a]))||dR[a]-dR[b]);
+  else ord.sort((a,b)=>dR[a]-dR[b]);
+  if(O6.rerank) ord=ord.slice(0,25).sort((a,b)=>g.rr[b]-g.rr[a]);
+  const rank=ord.indexOf(g.gold)+1;
+  const recall=rank>0&&rank<=5;
+  let ctx = O6.fewer ? ord.slice(0,3).filter(i=>!O6.rerank||g.rr[i]>=0.5) : ord.slice(0,9);
+  if(!ctx.length) ctx=ord.slice(0,1);
+  let f=1, why=[];
+  const pos=ctx.indexOf(g.gold)+1;
+  if(!pos){ f=0.15; why.push("the right chunk never reached the prompt"); }
+  else{
+    g.stale.forEach(s=>{const p=ctx.indexOf(s)+1;
+      if(p&&p<pos){f-=0.50;why.push("the 2023 edition sits above it");}
+      else if(p){f-=0.25;why.push("the 2023 edition is in the prompt");}});
+    g.conf.forEach(s=>{const p=ctx.indexOf(s)+1;
+      if(p&&p<pos){f-=0.35;why.push("a near-identical wrong policy outranks it");}
+      else if(p){f-=0.10;why.push("a near-identical wrong policy is in the prompt");}});
+    if(ctx.length>=7&&pos>=4&&pos<=ctx.length-2){f-=0.30;why.push("buried mid-context");}
+    if(g.tbl&&!O6.struct){f-=0.60;why.push("the carry-forward row is cut in half, so the model completes it from memory");}
+  }
+  f=Math.max(0,Math.min(1,f));
+  return {rank,recall,f,why:why.length?why.join("; "):"clean",ctx,pos};
+}
+function draw6(){
+  document.getElementById('c6sw').innerHTML=SW6.map(s=>
+    `<button class="sw ${O6[s.k]?'on':''}" data-k="${s.k}"><span class="knob"></span>
+      <span class="sl"><b>${s.l}</b><s>${s.d}</s></span></button>`).join('');
+  document.querySelectorAll('#c6sw .sw').forEach(b=>b.onclick=()=>{O6[b.dataset.k]=!O6[b.dataset.k];draw6();});
+
+  const res=GOLD.map(g=>({g,r:runQ(g)}));
+  const rec=Math.round(res.filter(o=>o.r.recall).length/res.length*100);
+  const fa=Math.round(res.reduce((s,o)=>s+o.r.f,0)/res.length*100);
+  const band=v=>v>=85?'g':v>=60?'m':'b';
+  document.getElementById('c6rv').textContent=rec+'%';
+  document.getElementById('c6fv').textContent=fa+'%';
+  document.getElementById('c6rb').style.width=rec+'%';
+  document.getElementById('c6fb').style.width=fa+'%';
+  document.getElementById('m-rec').className='mtr '+band(rec);
+  document.getElementById('m-fa').className='mtr '+band(fa);
+
+  document.getElementById('c6tbl').innerHTML=
+    `<div class="gtr hd"><span>question · why faithfulness moved</span><span style="text-align:right">rank</span><span style="text-align:right">faithful</span></div>`
+    +res.map(o=>`<div class="gtr"><div class="q">${o.g.q}<s>${o.r.why}</s></div>
+       <div class="c ${o.r.recall?'y':'n'}">#${o.r.rank||'—'}</div>
+       <div class="c ${o.r.f>=.85?'y':o.r.f>=.6?'':'n'}">${Math.round(o.r.f*100)}%</div></div>`).join('');
+
+  const v=document.getElementById('c6v');
+  if(rec>=100&&fa<75){v.className='verdict no';
+    v.innerHTML=`<b>Recall ${rec}%. Faithfulness ${fa}%.</b> Every question retrieved its correct source and the answers are still not trustworthy. This is the single most common evaluation mistake in RAG: <b>recall@k is a retrieval metric and it cannot see the generator</b>. Look at the reasons column — the right chunk arrived with a table row cut in half, and the model filled the gap from memory. A dashboard showing only the top meter would have called this shipped.`;}
+  else if(rec>=100&&fa>=95){v.className='verdict ok';
+    v.innerHTML=`Both meters at the top. Structure-aware chunks, hybrid retrieval, a reranker, a metadata filter and a short ordered context — <b>each fixed a different failure</b>, and none of them was a better model.`;}
+  else if(fa>rec+15){v.className='verdict mid';
+    v.innerHTML=`Faithfulness is ahead of recall, which sounds good and isn't: the questions that <b>failed to retrieve</b> aren't dragging faithfulness down because the model wasn't given enough to contradict itself with. Fix retrieval first.`;}
+  else{v.className='verdict mid';
+    v.innerHTML=`Recall <b>${rec}%</b>, faithfulness <b>${fa}%</b>. Move one switch at a time and watch which meter reacts — <b>they are measuring different halves of the pipeline</b> and they do not move together.`;}
+
+  document.getElementById('c6take').innerHTML=
+    "A real golden set is 30–100 questions with known correct sources: generate candidates synthetically, have a human check them, then re-run on every change in CI. Faithfulness is scored with an <b>LLM judge</b> — use a different, stronger model than the generator, give it a rubric, and re-anchor against human judgements periodically, because judges carry position, verbosity and self-preference bias. <b>Five questions and a spreadsheet beats no measurement at all.</b>";
+}
+document.getElementById('c6trap').onclick=()=>{
+  O6.struct=false;O6.hybrid=true;O6.rerank=true;O6.yearf=true;O6.fewer=true;draw6();
+  const s6=document.getElementById('s6');
+  if(s6&&s6.scrollIntoView) s6.scrollIntoView({behavior:'smooth',block:'start'});};
+document.getElementById('c6all').onclick=()=>{
+  Object.keys(O6).forEach(k=>O6[k]=true);draw6();};
+draw6();
+
+/* ---------- definition wires ---------- */
+function drawWires(){
+  document.querySelectorAll('.lab').forEach(lab=>{
+    const svg=lab.querySelector('.wl'); if(!svg) return;
+    if(getComputedStyle(svg).display==='none'){svg.innerHTML='';return;}
+    const lr=lab.getBoundingClientRect();
+    svg.setAttribute('viewBox',`0 0 ${lr.width} ${lr.height}`);
+    let out='';
+    lab.querySelectorAll('.def[data-term]').forEach(def=>{
+      const term=document.getElementById(def.dataset.term); if(!term) return;
+      const tr=term.getBoundingClientRect(), dr=def.getBoundingClientRect();
+      const x1=tr.right-lr.left+3, y1=tr.top-lr.top+tr.height/2;
+      const x2=dr.left-lr.left-3,  y2=dr.top-lr.top+18;
+      const mid=(x1+x2)/2;
+      out+=`<path d="M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}"/>`
+         + `<circle cx="${x1}" cy="${y1}" r="3.4"/><circle cx="${x2}" cy="${y2}" r="3.4"/>`;
+    });
+    svg.innerHTML=out;
+  });
+}
+addEventListener('load',drawWires);
+addEventListener('resize',drawWires);
+if(window.ResizeObserver){ new ResizeObserver(drawWires).observe(document.body); }
+setTimeout(drawWires,400);
+
+</script>
+</body>
+</html>

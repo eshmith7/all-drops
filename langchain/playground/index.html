@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangChain Agents — Playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--deep:#9A5F44;--sage:#7FA37A;--sage-bg:#EEF3EA;--rose:#C97B7B;--rose-bg:#F7EAEA;
+  --sun:#E8B95C;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding:0 30px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(247,239,226,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 18px;scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+nav a{flex:none;text-decoration:none;font-size:.76rem;font-weight:800;color:var(--dim);
+  padding:7px 12px;border-radius:9px;white-space:nowrap}
+nav a:hover{background:var(--card);color:var(--ink)}
+nav a.on{background:var(--clay);color:#FFF6E9}
+
+/* hero */
+header{padding:82px 0 62px;text-align:center}
+.kick{font-size:.68rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay)}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:3rem;line-height:1.05;margin:12px 0}
+h1 .ac{color:var(--clay)}
+header p{color:#6B5647;font-weight:600;font-size:1.02rem;max-width:52ch;margin:0 auto}
+
+/* sections */
+section{padding:76px 0 82px;border-top:1px solid var(--line);position:relative}
+section::before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+  width:10px;height:10px;border-radius:50%;background:var(--clay);
+  box-shadow:0 0 0 6px var(--bg)}
+.num{font-family:var(--mono);font-size:.78rem;color:var(--clay);font-weight:700;
+  letter-spacing:.14em;display:inline-block;background:#FBF3E7;border:1px solid var(--line);
+  border-radius:8px;padding:4px 10px;margin-bottom:10px}
+h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.85rem;line-height:1.14;margin:4px 0 12px}
+.lede{color:#6B5647;font-weight:600;font-size:1rem;margin-bottom:30px;max-width:66ch}
+.try{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--sun);color:#5C4210;border-radius:6px;padding:4px 10px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;
+  box-shadow:0 6px 22px rgba(122,90,64,.07)}
+.take{margin-top:22px;border-left:3px solid var(--clay);background:#FBF3E7;border-radius:0 12px 12px 0;
+  padding:12px 15px;font-size:.9rem;color:#6B5647}
+.take b{color:var(--deep)}
+
+/* controls */
+button{font:inherit;cursor:pointer}
+.btn{background:var(--clay);color:#FFF6E9;border:none;border-radius:11px;padding:11px 18px;
+  font-weight:800;font-size:.88rem}
+.btn:hover:not(:disabled){background:var(--deep)}
+.btn:disabled{opacity:.45}
+.btn.ghost{background:none;color:var(--clay);border:1.5px solid var(--clay)}
+.btn.ghost:hover:not(:disabled){background:#FBF3E7;color:var(--deep)}
+.row{display:flex;gap:11px;flex-wrap:wrap;margin-top:20px;align-items:center}
+.stat{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;font-family:var(--mono);font-size:.76rem;color:var(--dim)}
+.stat b{color:var(--clay);font-size:1rem}
+.verdict{margin-top:18px;border-radius:11px;padding:12px 14px;font-size:.9rem;font-weight:700}
+.verdict.ok{background:var(--sage-bg);border:1.5px solid var(--sage);color:#3F6B47}
+.verdict.no{background:var(--rose-bg);border:1.5px solid var(--rose);color:#8E4646}
+.results{margin-top:26px;padding-top:24px;border-top:1px solid var(--line)}
+code{font-family:var(--mono);font-size:.85em;background:#FBF3E7;border:1px solid var(--line);
+  border-radius:5px;padding:1px 5px}
+@media(max-width:640px){.card{padding:20px}h1{font-size:2.3rem}h2{font-size:1.5rem}}
+
+/* code */
+pre{font-family:var(--mono);font-size:.8rem;background:var(--ink);color:#F0E5D8;border-radius:12px;
+  padding:14px;overflow-x:auto;line-height:1.75;margin-top:12px}
+pre .k{color:#E8B583}pre .s{color:#A8C99A}pre .c{color:#9A8776}pre .e{color:#E39A8A}
+pre .arg{border-bottom:1.6px dotted #E8B583;border-radius:4px;padding:1px 3px;cursor:pointer}
+pre .arg:hover{background:rgba(232,181,131,.20)}
+pre .arg.sel{background:rgba(232,181,131,.30);color:#FFE9CF;border-bottom-color:#FFE9CF}
+pre .arg.bad{color:#E39A8A;border-bottom-color:#E39A8A}
+pre.sm{font-size:.74rem;line-height:1.6}
+
+/* light code blocks */
+.blk{border-radius:13px;padding:12px 15px;margin-top:12px}
+.blk.old{background:var(--rose-bg);border:1.5px solid var(--rose)}
+.blk.new{background:var(--sage-bg);border:1.5px solid var(--sage)}
+.blk .bl{font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;
+  font-weight:700;margin-bottom:7px}
+.blk.old .bl{color:#9E4B4B}.blk.new .bl{color:#3F6B47}
+.blk pre{background:none;color:var(--ink);padding:0;margin:0;font-size:.78rem;line-height:1.7}
+.blk.old pre .k,.blk.new pre .k{color:var(--deep);font-weight:700}
+.blk pre .s{color:#4F7A52}.blk.old pre .s{color:#8E4646}
+.blk pre .c{color:var(--dim)}
+
+/* panes + logs */
+.ask{background:var(--sage-bg);border-left:3px solid var(--sage);border-radius:0 10px 10px 0;
+  padding:13px 16px;font-weight:700;font-size:.95rem;color:#3F6B47;margin-bottom:18px}
+.twoup{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+@media(max-width:760px){.twoup{grid-template-columns:1fr}}
+.pane{background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:14px}
+.pt{font-family:var(--mono);font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:10px}
+.plog{display:grid;gap:8px;min-height:150px;align-content:start}
+.lrow{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px;
+  font-size:.82rem;line-height:1.5;animation:pop .3s ease-out}
+.lrow b{display:block;font-family:var(--mono);font-size:.64rem;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--clay);margin-bottom:3px}
+.lrow.dimrow{color:var(--dim);font-style:italic;background:none;border:none;padding:8px 0}
+.lrow.fin{background:var(--sage-bg);border-color:var(--sage)}
+.lrow.fin b{color:#3F6B47}
+.lrow.bad{background:var(--rose-bg);border-color:var(--rose)}
+.lrow.bad b{color:#9E4B4B}
+.lrow code{background:#FBF3E7}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pcount{display:flex;align-items:baseline;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.pcount b{font-family:'Fraunces',serif;font-weight:900;font-size:1.7rem;color:var(--clay);line-height:1}
+.pcount span{font-size:.78rem;font-weight:700;color:var(--dim)}
+.dia{width:100%;height:auto;display:block;margin-bottom:12px}
+
+/* chips + switches */
+.qopts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.qchip{background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:9px 14px;
+  font-size:.85rem;font-weight:700;text-align:left}
+.qchip:hover{border-color:var(--clay)}
+.qchip.on{background:var(--clay);color:#FFF6E9;border-color:var(--clay)}
+.qchip s{display:block;font-size:.72rem;font-weight:600;text-decoration:none;opacity:.75;font-family:var(--mono)}
+.switches{display:grid;gap:11px;margin-top:14px}
+.sw{display:flex;gap:13px;align-items:center;text-align:left;background:var(--bg);
+  border:1.5px solid var(--line);border-radius:12px;padding:12px 15px;width:100%}
+.sw.on{background:var(--sage-bg);border-color:var(--sage)}
+.sw.warn.on{background:var(--rose-bg);border-color:var(--rose)}
+.knob{width:34px;height:19px;border-radius:10px;background:var(--line);position:relative;flex-shrink:0;transition:background .2s}
+.knob::after{content:"";position:absolute;top:2.5px;left:3px;width:14px;height:14px;border-radius:50%;
+  background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on .knob{background:var(--sage)}
+.sw.warn.on .knob{background:var(--rose)}
+.sw.on .knob::after{transform:translateX(15px)}
+.sl b{font-size:.88rem}
+.sl s{display:block;font-size:.76rem;color:var(--dim);text-decoration:none;font-weight:600;margin-top:2px}
+
+/* arg explainer */
+.argbox{background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:15px 17px;margin-top:14px}
+.argbox h4{font-family:var(--mono);font-size:.92rem;color:var(--deep);margin-bottom:6px}
+.argbox p{font-size:.89rem;color:#6B5647;font-weight:600}
+
+/* schema view */
+.schema{background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;margin-top:12px}
+.kv{display:grid;grid-template-columns:92px minmax(0,1fr);gap:6px 12px;font-family:var(--mono);font-size:.77rem;line-height:1.55}
+@media(max-width:520px){.kv{grid-template-columns:1fr;gap:2px 0}.kv i{margin-top:7px}}
+.kv i{font-style:normal;color:var(--dim);letter-spacing:.06em}
+.kv u{text-decoration:none;color:var(--ink);word-break:break-word}
+.kv u.none{color:var(--rose);font-style:italic}
+
+/* message stepper */
+.mdots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.mdot{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);background:var(--bg);
+  font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--dim);
+  display:flex;align-items:center;justify-content:center}
+.mdot.seen{border-color:var(--clay);color:var(--deep)}
+.mdot.on{background:var(--clay);border-color:var(--clay);color:#FFF6E9}
+.msgcard{background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:16px;animation:pop .3s ease-out}
+.mtype{display:inline-block;font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.07em;
+  border-radius:7px;padding:3px 9px;margin-bottom:11px}
+.mtype.human{background:#FBF3E7;color:var(--deep);border:1.5px solid var(--clay)}
+.mtype.ai{background:#FDF3E2;color:#8A6520;border:1.5px solid var(--sun)}
+.mtype.tool{background:var(--sage-bg);color:#3F6B47;border:1.5px solid var(--sage)}
+.fld{font-family:var(--mono);font-size:.77rem;line-height:1.6;margin-bottom:6px;word-break:break-word}
+.fld i{font-style:normal;color:var(--clay);font-weight:700;margin-right:7px}
+.fld.mute{color:var(--dim)}
+.cap{font-size:.88rem;color:#6B5647;font-weight:600;border-top:1px solid var(--line);padding-top:11px;margin-top:12px}
+.cap b{color:var(--deep)}
+.mlist{display:grid;gap:6px;align-content:start}
+.mi{display:flex;gap:9px;align-items:baseline;font-family:var(--mono);font-size:.71rem;color:var(--ink);
+  background:var(--card);border:1.5px solid var(--line);border-radius:9px;padding:7px 9px;animation:pop .3s ease-out}
+.mi u{text-decoration:none;color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mi .ix{color:var(--dim)}
+.mi.on{border-color:var(--clay)}
+.mi.h{border-left:4px solid var(--clay)}
+.mi.a{border-left:4px solid var(--sun)}
+.mi.t{border-left:4px solid var(--sage)}
+.mlistwrap{background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:13px}
+
+/* chat */
+.bub{border-radius:12px;padding:10px 13px;font-size:.86rem;line-height:1.55;margin-bottom:9px;animation:pop .3s ease-out}
+.bub.u{background:#FBF3E7;border:1.5px solid var(--line)}
+.bub.a{background:var(--card);border:1.5px solid var(--line)}
+.bub.a.good{border-color:var(--sage);background:var(--sage-bg)}
+.bub.a.bad{border-color:var(--rose);background:var(--rose-bg)}
+.bub .who{font-family:var(--mono);font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);display:block;margin-bottom:4px}
+.bub .sys{font-family:var(--mono);font-size:.74rem;color:var(--dim)}
+
+/* migration */
+.status{display:inline-block;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.08em;
+  border-radius:7px;padding:4px 10px;margin-bottom:4px}
+.status.gone{background:var(--rose-bg);color:#9E4B4B;border:1.5px solid var(--rose)}
+.status.dep{background:#FDF3E2;color:#8A6520;border:1.5px solid var(--sun)}
+.why{font-size:.89rem;color:#6B5647;font-weight:600;margin-top:14px}
+.why b{color:var(--deep)}
+
+/* ---- definitions rail ---- */
+.lab{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:62px;align-items:start}
+.defs{display:flex;flex-direction:column;gap:20px;position:relative;z-index:2}
+.def{background:#fff;border:1.5px solid var(--line);border-left:4px solid var(--sage);
+  border-radius:12px;padding:14px 16px;box-shadow:0 3px 12px rgba(122,90,64,.07)}
+.def .lb{font-family:var(--mono);font-size:.56rem;letter-spacing:.18em;font-weight:700;color:var(--sage)}
+.def h4{font-family:'Fraunces',serif;font-weight:900;font-size:.95rem;margin:3px 0 4px;line-height:1.2}
+.def p{font-size:.78rem;line-height:1.5;color:#6B5647;font-weight:600}
+.def p b{color:var(--deep)}
+.def p code{font-size:.92em;padding:0 3px}
+.term{font-weight:800;color:var(--deep);border-bottom:2px dotted var(--sage);white-space:nowrap;position:relative}
+.wl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1}
+.wl path{fill:none;stroke:var(--sage);stroke-width:1.5;stroke-dasharray:4 4;opacity:.85}
+.wl circle{fill:var(--sage);stroke:#FFFBF3;stroke-width:1.5}
+@media(max-width:980px){
+  .lab{grid-template-columns:1fr;gap:16px}
+  .wl{display:none}
+  .term{border-bottom-style:solid}
+  .defs{margin-top:4px}
+}
+footer{padding:74px 0 90px;text-align:center;border-top:1px solid var(--line);margin-top:20px}
+footer .big{font-family:'Fraunces',serif;font-weight:900;font-size:1.4rem;margin-bottom:8px}
+footer p{color:var(--dim);font-weight:600;font-size:.9rem;max-width:46ch;margin:0 auto 16px}
+footer .credit{font-size:.78rem;margin-top:20px}
+footer .credit b{color:var(--deep)}
+body,button,input{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='6' y='6' width='12' height='12' rx='2.5' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Crect x='9.5' y='9.5' width='5' height='5' rx='1' fill='%23B4785B'/%3E%3Cpath d='M9 6V3M15 6V3M9 21v-3M15 21v-3M6 9H3M6 15H3M21 9h-3M21 15h-3' stroke='%23B4785B' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") 6 4, auto}
+
+</style>
+</head>
+<body>
+<nav><div class="wrap" id="nav"></div></nav>
+
+<header class="wrap">
+  <div class="kick">Be10x · Interactive</div>
+  <h1>Stop scripting it.<br>Let it <span class="ac">decide</span>.</h1>
+  <p>One order-support agent, three tools, and the exact Python you'd type in LangChain v1. Every widget here runs — click the code, flip the switches, watch what breaks.</p>
+</header>
+
+<!-- 01 CHAIN VS AGENT -->
+<section class="wrap" id="s1">
+  <div class="num">01</div>
+  <h2>A chain follows a script. An agent decides.</h2>
+  <p class="lede">A <span class="term" id="t-chain">chain</span> runs the steps you wrote, in the order you wrote them. An <span class="term" id="t-loop">agent loop</span> runs until the model stops asking for things. Same question, same model — press play and count the steps.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="ask">"Where is my order 4471, and can I still return it?"</div>
+    <div class="twoup">
+      <div class="pane">
+        <div class="pt">A chain</div>
+        <svg class="dia" viewBox="0 0 260 76" role="img" aria-label="prompt to model to parser, a straight line">
+          <rect x="5" y="14" width="66" height="28" rx="9" fill="#FBF3E7" stroke="#B4785B" stroke-width="1.6"/>
+          <text x="38" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#9A5F44">prompt</text>
+          <path d="M73 28h18" stroke="#E7D8C4" stroke-width="2"/>
+          <polygon points="90,24.5 97,28 90,31.5" fill="#E7D8C4"/>
+          <rect x="97" y="14" width="66" height="28" rx="9" fill="#FBF3E7" stroke="#B4785B" stroke-width="1.6"/>
+          <text x="130" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#9A5F44">model</text>
+          <path d="M165 28h18" stroke="#E7D8C4" stroke-width="2"/>
+          <polygon points="182,24.5 189,28 182,31.5" fill="#E7D8C4"/>
+          <rect x="189" y="14" width="66" height="28" rx="9" fill="#FBF3E7" stroke="#B4785B" stroke-width="1.6"/>
+          <text x="222" y="32" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#9A5F44">parser</text>
+          <text x="130" y="62" text-anchor="middle" font-family="Nunito, sans-serif" font-size="9.5" font-weight="700" fill="#A08B79">one way through — you wrote the order</text>
+        </svg>
+        <pre class="sm"><span class="k">from</span> langchain_core.output_parsers <span class="k">import</span> StrOutputParser
+
+chain = prompt | model | StrOutputParser()
+chain.invoke({<span class="s">"question"</span>: q})</pre>
+        <div class="plog" id="chainLog" style="margin-top:12px"></div>
+        <div class="pcount"><b id="chainN">0</b><span id="chainLbl">press play</span></div>
+      </div>
+      <div class="pane">
+        <div class="pt">An agent</div>
+        <svg class="dia" viewBox="0 0 260 76" role="img" aria-label="model and tools with a loop back arrow">
+          <rect x="34" y="10" width="72" height="28" rx="9" fill="#FBF3E7" stroke="#B4785B" stroke-width="1.6"/>
+          <text x="70" y="28" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#9A5F44">model</text>
+          <path d="M108 24h32" stroke="#E7D8C4" stroke-width="2"/>
+          <polygon points="139,20.5 146,24 139,27.5" fill="#E7D8C4"/>
+          <rect x="146" y="10" width="72" height="28" rx="9" fill="#EEF3EA" stroke="#7FA37A" stroke-width="1.6"/>
+          <text x="182" y="28" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#3F6B47">tools</text>
+          <path d="M182 40 C182 60 70 60 70 42" fill="none" stroke="#7FA37A" stroke-width="2" stroke-dasharray="5 4"/>
+          <polygon points="70,36 66.4,44 73.6,44" fill="#7FA37A"/>
+          <text x="130" y="72" text-anchor="middle" font-family="Nunito, sans-serif" font-size="9.5" font-weight="700" fill="#A08B79">round again until it stops asking</text>
+        </svg>
+        <pre class="sm"><span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+
+agent = create_agent(model=M, tools=T, system_prompt=S)
+agent.invoke({<span class="s">"messages"</span>: [{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: q}]})</pre>
+        <div class="plog" id="agentLog" style="margin-top:12px"></div>
+        <div class="pcount"><b id="agentN">0</b><span id="agentLbl">press play</span></div>
+      </div>
+    </div>
+    <div class="row"><button class="btn" id="playBoth">Ask both</button>
+      <button class="btn ghost" id="resetRun">Reset</button></div>
+    <div class="take" id="t1">Same model, same question. One of them has somewhere to go and look.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-chain"><div class="lb">DEFINITION</div><h4>Chain</h4>
+      <p>A fixed pipeline you compose yourself — <code>prompt | model | parser</code>. Still current, still the right call when <b>you already know every step</b>.</p></div>
+    <div class="def" data-term="t-loop"><div class="lb">DEFINITION</div><h4>Agent loop</h4>
+      <p>Call the model → run whatever tools it asked for → feed the results back → ask again. It ends when the model returns <b>no tool calls</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 02 CREATE_AGENT -->
+<section class="wrap" id="s2">
+  <div class="num">02</div>
+  <h2>Three arguments, one agent.</h2>
+  <p class="lede">Everything above is built by a single function. Click each argument in <span class="term" id="t-ca">create_agent</span> to see what it carries and what breaks without it — then flip the switch on <span class="term" id="t-sp">system_prompt</span> and meet the error every pre-1.0 tutorial will hand you.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Click the code</span>
+    <pre id="s2code"></pre>
+    <div class="argbox" id="s2info"></div>
+    <div class="switches" id="s2sw"></div>
+    <div class="results">
+      <div class="pt">What Python says when you run it</div>
+      <div id="s2out"></div>
+    </div>
+    <div class="take" id="t2"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-ca"><div class="lb">DEFINITION</div><h4>create_agent</h4>
+      <p>The one constructor in LangChain v1, from <code>langchain.agents</code>. It returns a <b>compiled graph</b>, so you get <code>.invoke()</code>, <code>.stream()</code> and <code>.astream()</code> with no wrapper around it.</p></div>
+    <div class="def" data-term="t-sp"><div class="lb">DEFINITION</div><h4>system_prompt</h4>
+      <p>Your standing instructions, as a plain string. It becomes the <code>SystemMessage</code> at the head of every turn. Not <code>prompt=</code> — that keyword <b>does not exist</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 03 DOCSTRINGS -->
+<section class="wrap" id="s3">
+  <div class="num">03</div>
+  <h2>The docstring IS the description.</h2>
+  <p class="lede">The model never reads your function body. It reads the <span class="term" id="t-desc">tool description</span> — which <span class="term" id="t-tool">@tool</span> lifts straight out of your docstring. Pick one of the three and watch the model decide.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="qopts" id="docPick"></div>
+    <pre id="s3code"></pre>
+    <div class="switches" id="hintSw"></div>
+    <div class="schema">
+      <div class="pt">What the model is handed at every turn</div>
+      <div class="kv" id="s3schema"></div>
+    </div>
+    <div class="results">
+      <div class="pt">The model's decision log</div>
+      <div class="plog" id="decLog"></div>
+      <div class="stat">
+        <span>tool calls <b id="tcN">—</b></span>
+        <span>wasted calls <b id="twN">—</b></span>
+        <span>answer <b id="taN">—</b></span>
+      </div>
+    </div>
+    <div class="verdict" id="s3v" style="display:none"></div>
+    <div class="row"><button class="btn" id="runTool">Ask the agent</button></div>
+    <div class="take">Your docstring is a prompt. It's read on <b>every single turn</b>, by a model choosing between three tools — and it is the only thing standing between a clean call and a guess.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-tool"><div class="lb">DEFINITION</div><h4>@tool</h4>
+      <p>The decorator from <code>langchain.tools</code> that turns a plain function into something a model can call. It reads the <b>name, docstring and type hints</b> and builds the schema from them.</p></div>
+    <div class="def" data-term="t-desc"><div class="lb">DEFINITION</div><h4>Tool description</h4>
+      <p>The text the model chooses by. It defaults to your docstring; override it with <code>description=</code> or an <code>Annotated[str, "..."]</code> argument when the docstring has other jobs.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 04 MESSAGES -->
+<section class="wrap" id="s4">
+  <div class="num">04</div>
+  <h2>What the agent actually passes around.</h2>
+  <p class="lede">In and out, an agent's <span class="term" id="t-state">state</span> is one key: <code>{"messages": [...]}</code>. Step through the eight <span class="term" id="t-msg">messages</span> that one run of our question produced.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Step through it</span>
+    <div class="mdots" id="mdots"></div>
+    <div class="twoup">
+      <div id="msgBox"></div>
+      <div class="mlistwrap">
+        <div class="pt">result["messages"]</div>
+        <div class="mlist" id="mlist"></div>
+      </div>
+    </div>
+    <div class="row"><button class="btn" id="mNext">Next message →</button>
+      <button class="btn ghost" id="mBack">← Back</button>
+      <button class="btn ghost" id="mReset">Start over</button>
+      <span class="stat" style="margin-top:0"><span id="mProg"></span></span></div>
+    <div class="take" id="t4"></div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-msg"><div class="lb">DEFINITION</div><h4>Messages</h4>
+      <p><code>SystemMessage</code>, <code>HumanMessage</code>, <code>AIMessage</code>, <code>ToolMessage</code> — all from <code>langchain.messages</code>. The whole conversation, <b>tool traffic included</b>.</p></div>
+    <div class="def" data-term="t-state"><div class="lb">DEFINITION</div><h4>State</h4>
+      <p>The dict flowing through the graph. For a default agent it is just <code>{"messages": [...]}</code> — the <b>same shape going in as coming out</b>, which is why you can append to it and re-invoke.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 05 MEMORY -->
+<section class="wrap" id="s5">
+  <div class="num">05</div>
+  <h2>Memory is a thread_id.</h2>
+  <p class="lede">An agent forgets everything between calls unless you hand it a <span class="term" id="t-ckpt">checkpointer</span>. After that, a <span class="term" id="t-tid">thread_id</span> decides which conversation you're continuing — or whether you're a stranger.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Try it</span>
+    <div class="twoup">
+      <div class="pane">
+        <div class="pt">Turn 1 — already sent, thread customer-4471</div>
+        <div class="bub u"><span class="who">human</span>Where is order 4471?</div>
+        <div class="bub a"><span class="who">ai · after 1 tool call</span>Order 4471 — wireless earbuds, ₹2,499 — was delivered on 12 Sept.</div>
+        <div class="bub a"><span class="sys">4 messages saved to the checkpoint</span></div>
+      </div>
+      <div class="pane">
+        <div class="pt">Turn 2 — the follow-up</div>
+        <div class="bub u"><span class="who">human</span>Can I still return it?</div>
+        <div id="t2log"></div>
+      </div>
+    </div>
+    <div class="qopts" id="threadPick" style="margin-top:16px"></div>
+    <div class="switches" id="ckptSw"></div>
+    <pre id="s5code"></pre>
+    <div class="results">
+      <div class="stat">
+        <span>messages restored <b id="memN">—</b></span>
+        <span>resolved "it" <b id="memR">—</b></span>
+      </div>
+    </div>
+    <div class="verdict" id="s5v" style="display:none"></div>
+    <div class="row"><button class="btn" id="sendFollow">Send the follow-up</button></div>
+    <div class="take">Old tutorials will tell you to attach <code>ConversationBufferMemory</code>. <b>It's deprecated and lives in langchain-classic now.</b> Memory stopped being an object you hand the chain and became state the runtime saves, keyed by a thread.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-ckpt"><div class="lb">DEFINITION</div><h4>Checkpointer</h4>
+      <p>The thing that <b>saves state after every step</b>. <code>InMemorySaver</code> for a notebook; swap in <code>SqliteSaver</code> or <code>PostgresSaver</code> when it has to survive a restart.</p></div>
+    <div class="def" data-term="t-tid"><div class="lb">DEFINITION</div><h4>thread_id</h4>
+      <p>The conversation's name, passed in <code>config</code> rather than in the message. Same id, same history. New id, <b>clean slate</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<!-- 06 DEPRECATIONS -->
+<section class="wrap" id="s6">
+  <div class="num">06</div>
+  <h2>The five things tutorials still get wrong.</h2>
+  <p class="lede">LangChain 1.0 landed in October 2025 and most blog posts predate it. Five APIs you'll still be handed, and what replaced each. Most of the old ones survive in <span class="term" id="t-classic">langchain-classic</span> — while <span class="term" id="t-lcel">LCEL</span> is the one thing here that never went anywhere.</p>
+  <div class="lab"><div class="mainc"><div class="card">
+    <span class="try">Check your code</span>
+    <div class="qopts" id="migPick"></div>
+    <div id="migOut"></div>
+    <div class="take">One rule for reading any LangChain tutorial: <b>if it imports from <code>langchain.chains</code> or <code>langchain.memory</code>, it predates 1.0.</b> The modern surface is small — <code>create_agent</code>, <code>@tool</code>, messages, a checkpointer.</div>
+  </div></div>
+  <aside class="defs">
+    <div class="def" data-term="t-classic"><div class="lb">DEFINITION</div><h4>langchain-classic</h4>
+      <p>The separate package the pre-1.0 surface retired into. <code>pip install langchain-classic</code> keeps old code running — it is a <b>migration crutch</b>, not somewhere to start.</p></div>
+    <div class="def" data-term="t-lcel"><div class="lb">DEFINITION</div><h4>LCEL</h4>
+      <p>The pipe syntax — <code>prompt | model | parser</code>. Not deprecated, not going anywhere. What changed is that it is <b>no longer how you build agents</b>.</p></div>
+  </aside><svg class="wl"></svg></div>
+</section>
+
+<footer class="wrap">
+  <div class="big">That's a working agent.</div>
+  <p>Three arguments to create_agent. Tools whose docstrings actually describe them. One list of messages. A checkpointer and a thread_id. Everything else in LangChain v1 is a variation on those four.</p>
+  <a class="btn" href="#s1" style="text-decoration:none;display:inline-block">Back to the top</a>
+  <p class="credit">Be10x · Daily Drop — Agentic AI with LangChain · built by <b>Eshmith Saideep</b></p>
+</footer>
+
+<script>
+/* ---------- nav ---------- */
+const SECTIONS=[["s1","Chain vs agent"],["s2","create_agent"],["s3","Docstrings"],["s4","Messages"],["s5","Memory"],["s6","Deprecated"]];
+document.getElementById('nav').innerHTML=SECTIONS.map(([id,l])=>`<a href="#${id}" data-id="${id}">${l}</a>`).join('');
+const links=[...document.querySelectorAll('nav a')];
+addEventListener('scroll',()=>{let cur=SECTIONS[0][0];
+  SECTIONS.forEach(([id])=>{if(document.getElementById(id).getBoundingClientRect().top<160)cur=id;});
+  links.forEach(a=>a.classList.toggle('on',a.dataset.id===cur));});
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const $=id=>document.getElementById(id);
+
+/* ===== 01 chain vs agent ===== */
+const CHAIN_ROWS=[
+  ["formats the prompt","ChatPromptTemplate fills <code>{question}</code> in"],
+  ["one model call","no tools attached, so nothing to call"],
+  ["parses the string","StrOutputParser() hands you text"]
+];
+const CHAIN_FINAL="Order 4471 is out for delivery and should reach you in 3–5 business days. You can return it any time within 30 days.";
+const AGENT_ROWS=[
+  ["model turn 1",'asks for <code>lookup_order("4471")</code>',1],
+  ["tool result","delivered 12 Sept · wireless earbuds · ₹2,499",0],
+  ["model turn 2",'has the order, not the rule → <code>search_policy("return window electronics")</code>',1],
+  ["tool result","10-day window, unopened electronics only",0],
+  ["model turn 3",'won\'t eyeball the dates → <code>days_since("12 Sept")</code>',1],
+  ["tool result","12",0],
+  ["model turn 4","12 is past 10. No tool calls this time — the loop ends",0]
+];
+const AGENT_FINAL="Order 4471 — wireless earbuds, ₹2,499 — was delivered on 12 Sept, 12 days ago. The return window is 10 days, so this one's just outside it. If the item is faulty I can raise a replacement instead.";
+let running=false;
+function resetRun(){
+  $('chainLog').innerHTML='<div class="lrow dimrow">press Ask both</div>';
+  $('agentLog').innerHTML='<div class="lrow dimrow">press Ask both</div>';
+  $('chainN').textContent='0'; $('agentN').textContent='0';
+  $('chainLbl').textContent='press play'; $('agentLbl').textContent='press play';
+  $('t1').innerHTML="Same model, same question. One of them has somewhere to go and look.";
+}
+function push(id,what,txt,cls){
+  $(id).insertAdjacentHTML('beforeend',`<div class="lrow ${cls||''}"><b>${what}</b><span>${txt}</span></div>`);
+}
+async function runChain(){
+  $('chainLog').innerHTML='';
+  for(const [w,t] of CHAIN_ROWS){ push('chainLog',w,t); await wait(700); }
+  $('chainN').textContent='1'; $('chainLbl').textContent='step, fixed by you';
+  push('chainLog','it answers','“'+CHAIN_FINAL+'”','bad'); await wait(500);
+  push('chainLog','the problem','Fluent, confident, and wrong twice. It has never seen order 4471 and it invented the 30-day window.','bad');
+}
+async function runAgent(){
+  $('agentLog').innerHTML=''; let n=0;
+  for(const [w,t,c] of AGENT_ROWS){
+    push('agentLog',w,t);
+    if(c){ n++; $('agentN').textContent=String(n); $('agentLbl').textContent=n===1?'tool step so far':'tool steps so far'; }
+    await wait(700);
+  }
+  $('agentLbl').textContent='steps, chosen by the model';
+  push('agentLog','it answers','“'+AGENT_FINAL+'”','fin');
+}
+$('playBoth').onclick=async()=>{
+  if(running)return; running=true;
+  const b=$('playBoth'); b.disabled=true; b.textContent='running…';
+  $('t1').innerHTML="Watch the right-hand pane. It doesn't answer first — it goes and checks, three times.";
+  await Promise.all([runChain(),runAgent()]);
+  $('t1').innerHTML="Nobody wrote the number 3. Ask about two orders and the same agent goes round five times instead. <b>The length of the loop is the model's decision</b> — that is the whole difference, and it's why a chain can't do this job.";
+  b.disabled=false; b.textContent='Ask again'; running=false;
+};
+$('resetRun').onclick=()=>{ if(!running) resetRun(); };
+resetRun();
+
+/* ===== 02 create_agent ===== */
+let selArg='model', usePrompt=false;
+const ARGS={
+  model:{
+    h:'model=',
+    p:'The chat model, given as a <code>"provider:model"</code> string. <code>create_agent</code> resolves it through <code>init_chat_model</code> for you, so you only import a provider class when you need to configure one by hand.',
+    bl:'leave it out',
+    code:`<span class="e">TypeError: create_agent() missing 1 required positional argument: 'model'</span>`
+  },
+  tools:{
+    h:'tools=',
+    p:'The list of <code>@tool</code> functions the model is allowed to call. <code>create_agent</code> runs <code>bind_tools</code> on the model for you and wires the tool-running node into the loop — you never call <code>bind_tools</code> yourself inside an agent.',
+    bl:'tools=[] — perfectly legal, and the trap',
+    code:`agent.invoke(...)  <span class="c"># 1 model turn, 0 tool calls</span>
+<span class="s">"Your order should arrive in 3–5 business days."</span>  <span class="c"># invented</span>`
+  },
+  system_prompt:{
+    h:'system_prompt=',
+    p:'The standing brief — who it is, what it may promise, when to escalate. It becomes the <code>SystemMessage</code> at the head of every turn, so it is re-read on every loop, not just the first.',
+    bl:'leave it out',
+    code:`<span class="c"># still runs. Still answers. With no idea whose side it's on:</span>
+<span class="s">"Sure, I've approved a full refund for you!"</span>  <span class="c"># nobody authorised that</span>`
+  }
+};
+function drawS2(){
+  const third = usePrompt
+    ? `<span class="arg bad ${selArg==='system_prompt'?'sel':''}" data-a="system_prompt">prompt</span>`
+    : `<span class="arg ${selArg==='system_prompt'?'sel':''}" data-a="system_prompt">system_prompt</span>`;
+  $('s2code').innerHTML =
+`<span class="c"># langchain v1 — this is the whole agent API</span>
+<span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+
+agent = create_agent(
+    <span class="arg ${selArg==='model'?'sel':''}" data-a="model">model</span>=<span class="s">"anthropic:claude-sonnet-5"</span>,
+    <span class="arg ${selArg==='tools'?'sel':''}" data-a="tools">tools</span>=[lookup_order, search_policy, days_since],
+    ${third}=<span class="s">"You are a support agent for an online store."</span>,
+)
+
+result = agent.invoke({<span class="s">"messages"</span>: [
+    {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Where is my order 4471, and can I still return it?"</span>}
+]})
+<span class="k">print</span>(result[<span class="s">"messages"</span>][-1].text)`;
+  $('s2code').querySelectorAll('.arg').forEach(el=>el.onclick=()=>{selArg=el.dataset.a;drawS2();});
+
+  const a=ARGS[selArg];
+  $('s2info').innerHTML=`<h4>${a.h}</h4><p>${a.p}</p>
+    <div class="blk old"><div class="bl">${a.bl}</div><pre>${a.code}</pre></div>`;
+
+  $('s2sw').innerHTML=`<button class="sw warn ${usePrompt?'on':''}" id="promptTog"><span class="knob"></span>
+    <span class="sl"><b>Copy-paste <code>prompt=</code> from a 2024 tutorial</b>
+    <s>${usePrompt?'on — the keyword that does not exist':'off — using the real argument name'}</s></span></button>`;
+  $('promptTog').onclick=()=>{usePrompt=!usePrompt;drawS2();};
+
+  $('s2out').innerHTML = usePrompt
+    ? `<div class="blk old"><div class="bl">$ python support_agent.py</div><pre>Traceback (most recent call last):
+  File <span class="s">"support_agent.py"</span>, line 4, <span class="k">in</span> &lt;module&gt;
+    agent = create_agent(
+<span class="e">TypeError: create_agent() got an unexpected keyword argument 'prompt'</span></pre></div>`
+    : `<div class="blk new"><div class="bl">$ python support_agent.py</div><pre>&gt;&gt;&gt; agent = create_agent(...)
+&gt;&gt;&gt; <span class="k">type</span>(agent)
+&lt;<span class="k">class</span> <span class="s">'langgraph.graph.state.CompiledStateGraph'</span>&gt;
+<span class="c"># a compiled graph — .invoke(), .stream(), .astream() all work on it</span></pre></div>`;
+
+  $('t2').innerHTML = usePrompt
+    ? "This one costs people an afternoon. <code>prompt=</code> was never a <code>create_agent</code> argument — the parameter is <b><code>system_prompt=</code></b>, and Python tells you so in the bluntest way it can."
+    : "Three arguments is the entire required surface. Everything else — <code>checkpointer=</code>, <code>response_format=</code>, <code>middleware=</code> — is <b>optional and additive</b>. You never rewrite the loop to add them.";
+}
+drawS2();
+
+/* ===== 03 docstrings ===== */
+const DOCS={
+  none:{label:"No docstring",sub:"it happens",doc:null},
+  vague:{label:"Vague",sub:'"Looks stuff up."',doc:"Looks stuff up."},
+  good:{label:"Specific",sub:'"Look up an order\'s status…"',doc:"Look up an order's status, delivery date, item and amount by its ID."}
+};
+let docKey='none', hints=true, runningTool=false;
+function drawS3(){
+  $('docPick').innerHTML=Object.entries(DOCS).map(([k,d])=>
+    `<button class="qchip ${docKey===k?'on':''}" data-k="${k}">${d.label}<s>${d.sub}</s></button>`).join('');
+  $('docPick').querySelectorAll('.qchip').forEach(b=>b.onclick=()=>{docKey=b.dataset.k;drawS3();clearDec();});
+
+  const d=DOCS[docKey];
+  const sig = hints ? `order_id: <span class="k">str</span>) -&gt; <span class="k">str</span>:` : `order_id):  <span class="c"># no hints</span>`;
+  const docLine = d.doc ? `\n    <span class="s">"""${d.doc}"""</span>` : '';
+  $('s3code').innerHTML =
+`<span class="k">from</span> langchain.tools <span class="k">import</span> tool
+
+<span class="k">@tool</span>
+<span class="k">def</span> lookup_order(${sig}${docLine}
+    <span class="c"># the model never reads this part</span>
+    <span class="k">return</span> <span class="s">"Order 4471: delivered 12 Sept, wireless earbuds, Rs 2,499"</span>`;
+
+  $('hintSw').innerHTML=`<button class="sw warn ${hints?'':'on'}" id="hintTog"><span class="knob"></span>
+    <span class="sl"><b>Drop the <code>order_id: str</code> type hint</b>
+    <s>${hints?'off — hints present, schema generated':'on — no hint, so there is no input schema'}</s></span></button>`;
+  $('hintTog').onclick=()=>{hints=!hints;drawS3();clearDec();};
+
+  const desc = d.doc ? `"${d.doc}"` : '(empty — nothing to read)';
+  const args = hints ? `{"order_id": {"type": "string"}}` : 'no schema generated';
+  $('s3schema').innerHTML =
+    `<i>name</i><u>lookup_order</u>
+     <i>description</i><u class="${d.doc?'':'none'}">${desc}</u>
+     <i>args</i><u class="${hints?'':'none'}">${args}</u>`;
+}
+function clearDec(){
+  $('decLog').innerHTML='<div class="lrow dimrow">press Ask the agent</div>';
+  $('tcN').textContent='—';$('twN').textContent='—';$('taN').textContent='—';
+  $('s3v').style.display='none';
+}
+const SCEN={
+  none:{rows:[
+    ["scans the tool list",'<code>lookup_order</code> — no description at all'],
+    ["decides","“Nothing here says it can fetch an order. I'll answer from what I know.”"],
+    ["answers","“Order 4471 should arrive within 3–5 business days.”",'bad']],
+    calls:0,waste:0,ans:"wrong",ok:false,
+    v:"× <b>Zero tool calls.</b> The function was perfect, the wiring was perfect, and the model never knew it existed. An undescribed tool is an unused tool."},
+  vague:{rows:[
+    ["scans the tool list",'<code>lookup_order</code> — “Looks stuff up.”'],
+    ["decides","“'Stuff' could mean the returns policy too. I'll try this one.”"],
+    ["calls the wrong thing",'<code>lookup_order("return window electronics")</code>','bad'],
+    ["tool result","No order found for 'return window electronics'.",'bad'],
+    ["recovers",'<code>lookup_order("4471")</code> → delivered 12 Sept, ₹2,499'],
+    ["answers","Right answer, two turns late."]],
+    calls:2,waste:1,ans:"right",ok:false,
+    v:"× It got there — after a wasted call, a wasted round trip and a wasted ₹. Vague descriptions don't break an agent, they make it <b>slow, expensive and unpredictable</b>, which is harder to debug."},
+  good:{rows:[
+    ["scans the tool list",'<code>lookup_order</code> — “Look up an order\'s status, delivery date, item and amount by its ID.”'],
+    ["decides","“That's exactly the first half of the question, and 4471 is the ID.”"],
+    ["calls",'<code>lookup_order("4471")</code>'],
+    ["tool result","delivered 12 Sept · wireless earbuds · ₹2,499"],
+    ["moves on",'the description also told it what this tool is <i>not</i> for → <code>search_policy(...)</code>','fin']],
+    calls:1,waste:0,ans:"right",ok:true,
+    v:"✓ <b>One call, first try, right argument.</b> Nothing changed but a sentence of English — and notice the description did double duty: it also stopped the model using this tool for the policy half."}
+};
+$('runTool').onclick=async()=>{
+  if(runningTool)return; runningTool=true;
+  const b=$('runTool'); b.disabled=true; b.textContent='thinking…';
+  $('s3v').style.display='none';
+  let s=SCEN[docKey];
+  if(!hints){
+    s={rows:[
+      ["scans the tool list",`<code>lookup_order</code> — ${DOCS[docKey].doc?'description present':'no description'}, <b>no input schema</b>`],
+      ["decides","“I know what it does. I have no idea what to send it.”",'bad'],
+      ["gives up","the call is never made — no hint, no schema, no call",'bad']],
+      calls:0,waste:0,ans:"wrong",ok:false,
+      v:"× The type hint isn't decoration. <code>@tool</code> builds the argument schema from it, and without a schema there is nothing for the model to fill in. <b>Description tells it whether to call; the hint tells it how.</b>"};
+  }
+  $('decLog').innerHTML='';
+  for(const r of s.rows){ push('decLog',r[0],r[1],r[2]); await wait(800); }
+  $('tcN').textContent=s.calls; $('twN').textContent=s.waste; $('taN').textContent=s.ans;
+  const v=$('s3v'); v.style.display='block'; v.className='verdict '+(s.ok?'ok':'no'); v.innerHTML=s.v;
+  b.disabled=false; b.textContent='Ask again'; runningTool=false;
+};
+drawS3(); clearDec();
+
+/* ===== 04 messages ===== */
+const MSGS=[
+ {t:"HumanMessage",c:"human",short:'"Where is my order 4471…"',
+  f:[["content",'"Where is my order 4471, and can I still return it?"']],
+  cap:"What you passed in. You wrote a plain dict — <code>{\"role\": \"user\", \"content\": ...}</code> — and LangChain converted it to a <b>HumanMessage</b> before the model ever saw it."},
+ {t:"AIMessage",c:"ai",short:"tool_calls → lookup_order",
+  f:[[".text",'"" (empty)'],[".tool_calls",'[{"name": "lookup_order",\n   "args": {"order_id": "4471"},\n   "id": "call_a1"}]']],
+  cap:"An AIMessage with an empty <code>.text</code> and a filled <code>.tool_calls</code> is the model <b>asking for something, not answering</b>. Nothing has run yet — this is only a request."},
+ {t:"ToolMessage",c:"tool",short:"lookup_order → delivered 12 Sept",
+  f:[["content",'"Order 4471: delivered 12 Sept, wireless earbuds, Rs 2,499"'],["tool_call_id",'"call_a1"'],["name",'"lookup_order"']],
+  cap:"Your function's return value, wrapped. The <code>tool_call_id</code> is what ties it back to <code>call_a1</code> — with several calls in flight, that id is <b>the only thing telling the model which answer is which</b>."},
+ {t:"AIMessage",c:"ai",short:"tool_calls → search_policy",
+  f:[[".text",'"" (empty)'],[".tool_calls",'[{"name": "search_policy",\n   "args": {"query": "return window electronics"},\n   "id": "call_b2"}]']],
+  cap:"Round two. It has the order but not the rule, so it goes looking. <b>Nobody scripted a second call</b> — it read the observation and chose."},
+ {t:"ToolMessage",c:"tool",short:"search_policy → 10-day window",
+  f:[["content",'"Returns accepted within 10 days of delivery.\n Unopened electronics only."'],["tool_call_id",'"call_b2"']],
+  cap:"A retriever hit, dressed as an ordinary tool result. To the agent there is <b>no difference between RAG and any other tool</b> — it's text coming back with an id."},
+ {t:"AIMessage",c:"ai",short:"tool_calls → days_since",
+  f:[[".text",'"" (empty)'],[".tool_calls",'[{"name": "days_since",\n   "args": {"date": "12 Sept"},\n   "id": "call_c3"}]']],
+  cap:"It could have eyeballed the date arithmetic. Handing it to a tool is the reason it <b>doesn't have to guess</b> — and why the answer is auditable."},
+ {t:"ToolMessage",c:"tool",short:"days_since → 12",
+  f:[["content",'"12"'],["tool_call_id",'"call_c3"']],
+  cap:"Twelve days. Now — and only now — every piece needed to answer is sitting in the same list."},
+ {t:"AIMessage",c:"ai",short:"final answer · no tool calls",
+  f:[[".text",'"Order 4471 — wireless earbuds, ₹2,499 — was\n delivered on 12 Sept, 12 days ago. The return\n window is 10 days, so this one is just outside\n it. If it is faulty I can raise a replacement."'],[".tool_calls","[]"],[".usage_metadata",'{"input_tokens": 1204, "output_tokens": 96}']],
+  cap:"Empty <code>.tool_calls</code> is the stop signal — that is <b>literally how the loop ends</b>. <code>result[\"messages\"][-1].text</code> is the string you print."}
+];
+let mi=0;
+function drawMsgs(){
+  $('mdots').innerHTML=MSGS.map((m,i)=>
+    `<div class="mdot ${i<mi?'seen':''} ${i===mi?'on':''}">${i+1}</div>`).join('');
+  const m=MSGS[mi];
+  $('msgBox').innerHTML=`<div class="msgcard">
+    <span class="mtype ${m.c}">${m.t}</span>
+    ${m.f.map(([k,v])=>`<div class="fld"><i>${k}</i>${v.replace(/\n/g,'<br>&nbsp;&nbsp;')}</div>`).join('')}
+    <div class="cap">${m.cap}</div></div>`;
+  $('mlist').innerHTML=MSGS.slice(0,mi+1).map((m2,i)=>
+    `<div class="mi ${m2.c==='human'?'h':m2.c==='ai'?'a':'t'} ${i===mi?'on':''}">
+      <span class="ix">${i}</span><b>${m2.t}</b><u>${m2.short}</u></div>`).join('');
+  $('mProg').innerHTML=`message <b>${mi+1}</b> of 8 · list length <b>${mi+1}</b>`;
+  $('mNext').disabled = mi>=MSGS.length-1;
+  $('mBack').disabled = mi===0;
+  const t=$('t4');
+  if(mi===0) t.innerHTML="One key in, one key out. Step forward and watch the list on the right grow.";
+  else if(mi<MSGS.length-1) t.innerHTML=`Nothing is ever thrown away. Turn ${Math.ceil((mi+1)/2)} of the loop can read <b>every message before it</b> — that is the entire memory of the run.`;
+  else t.innerHTML="Eight messages, one list. <b>Everything the agent knows at any moment is in there</b> — which makes memory, in the next section, just the question of who keeps the list between calls.";
+}
+$('mNext').onclick=()=>{if(mi<MSGS.length-1){mi++;drawMsgs();}};
+$('mBack').onclick=()=>{if(mi>0){mi--;drawMsgs();}};
+$('mReset').onclick=()=>{mi=0;drawMsgs();};
+drawMsgs();
+
+/* ===== 05 memory ===== */
+let thread='customer-4471', ckpt=true, sending=false;
+const THREADS=[["customer-4471","the same customer, same session"],["customer-9002","a different customer entirely"]];
+function drawS5(){
+  $('threadPick').innerHTML=THREADS.map(([id,sub])=>
+    `<button class="qchip ${thread===id?'on':''}" data-k="${id}">thread_id = "${id}"<s>${sub}</s></button>`).join('');
+  $('threadPick').querySelectorAll('.qchip').forEach(b=>b.onclick=()=>{thread=b.dataset.k;drawS5();clearFollow();});
+
+  $('ckptSw').innerHTML=`<button class="sw ${ckpt?'on':''}" id="ckptTog"><span class="knob"></span>
+    <span class="sl"><b>checkpointer=InMemorySaver()</b>
+    <s>${ckpt?'on — state is saved after every step':'off — every invoke starts from nothing'}</s></span></button>`;
+  $('ckptTog').onclick=()=>{ckpt=!ckpt;drawS5();clearFollow();};
+
+  const ckptImport = ckpt ? `<span class="k">from</span> langgraph.checkpoint.memory <span class="k">import</span> InMemorySaver\n` : '';
+  const ckptLine = ckpt ? `\n    checkpointer=InMemorySaver(),` : '';
+  const cfgNote = ckpt ? '' : `  <span class="c"># accepted, and quietly ignored</span>`;
+  $('s5code').innerHTML =
+`<span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+${ckptImport}
+agent = create_agent(
+    model=<span class="s">"anthropic:claude-sonnet-5"</span>,
+    tools=[lookup_order, search_policy, days_since],${ckptLine}
+)
+
+config = {<span class="s">"configurable"</span>: {<span class="s">"thread_id"</span>: <span class="s">"${thread}"</span>}}${cfgNote}
+agent.invoke({<span class="s">"messages"</span>: [
+    {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Can I still return it?"</span>}
+]}, config)`;
+}
+function clearFollow(){
+  $('t2log').innerHTML='<div class="bub a"><span class="sys">press “Send the follow-up”</span></div>';
+  $('memN').textContent='—'; $('memR').textContent='—'; $('s5v').style.display='none';
+}
+$('sendFollow').onclick=async()=>{
+  if(sending)return; sending=true;
+  const b=$('sendFollow'); b.disabled=true; b.textContent='sending…';
+  $('t2log').innerHTML=''; $('s5v').style.display='none';
+  const same = ckpt && thread==='customer-4471';
+  const loaded = same?4:0;
+  const add=(html,d)=>{$('t2log').insertAdjacentHTML('beforeend',html);return wait(d||700);};
+  if(!ckpt){
+    await add(`<div class="bub a"><span class="sys">no checkpointer → state starts empty</span></div>`);
+    await add(`<div class="bub a"><span class="sys">config carries thread_id "${thread}" — nothing reads it</span></div>`);
+    await add(`<div class="bub a bad"><span class="who">ai</span>Happy to help with a return — which order number is it?</div>`,0);
+  }else if(same){
+    await add(`<div class="bub a"><span class="sys">checkpoint "${thread}" → 4 messages restored</span></div>`);
+    await add(`<div class="bub a"><span class="sys">resolves “it” → order 4471, earbuds, delivered 12 Sept</span></div>`);
+    await add(`<div class="bub a"><span class="sys">search_policy(…) → 10-day window · days_since("12 Sept") → 12</span></div>`);
+    await add(`<div class="bub a good"><span class="who">ai</span>Not quite — the earbuds were delivered 12 days ago and the window is 10 days. If they're faulty I can raise a replacement instead.</div>`,0);
+  }else{
+    await add(`<div class="bub a"><span class="sys">checkpoint "${thread}" → 0 messages restored</span></div>`);
+    await add(`<div class="bub a"><span class="sys">“it” has no antecedent in this thread</span></div>`);
+    await add(`<div class="bub a bad"><span class="who">ai</span>Of course — which order are you asking about?</div>`,0);
+  }
+  $('memN').textContent=loaded; $('memR').textContent=same?'yes':'no';
+  const v=$('s5v'); v.style.display='block';
+  if(same){ v.className='verdict ok';
+    v.innerHTML="✓ The follow-up never mentioned an order number. The agent read it off <b>four restored messages</b> — and then still had to do two fresh tool calls, because memory gives you context, not answers."; }
+  else if(!ckpt){ v.className='verdict no';
+    v.innerHTML="× Without a checkpointer <b>every <code>.invoke()</code> is turn one</b>. The <code>thread_id</code> doesn't raise anything — it's simply ignored, which is the more annoying kind of failure."; }
+  else{ v.className='verdict no';
+    v.innerHTML="× Same agent, same checkpointer, four characters different in the id — and it's a stranger. <b>thread_id is the boundary between two customers</b>, which is exactly what you want in production."; }
+  b.disabled=false; b.textContent='Send again'; sending=false;
+};
+drawS5(); clearFollow();
+
+/* ===== 06 migration checker ===== */
+const MIG=[
+ {k:"initialize_agent",st:"Removed in 0.1.0",cls:"gone",
+  old:`<span class="k">from</span> langchain.agents <span class="k">import</span> initialize_agent, AgentType
+
+agent = initialize_agent(
+    tools, llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=<span class="k">True</span>,
+)`,
+  neu:`<span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+
+agent = create_agent(
+    model=<span class="s">"anthropic:claude-sonnet-5"</span>,
+    tools=[lookup_order, search_policy, days_since],
+)`,
+  why:'The agent “type” was a string picking a prompt-and-parse strategy, because models couldn\'t call tools natively. <b>They can now</b>, so there is nothing left to choose. This import doesn\'t warn — it fails.'},
+ {k:"AgentExecutor",st:"Deprecated in 1.0",cls:"dep",
+  old:`<span class="k">from</span> langchain.agents <span class="k">import</span> AgentExecutor, create_tool_calling_agent
+
+agent = create_tool_calling_agent(llm, tools, prompt)
+executor = AgentExecutor(agent=agent, tools=tools, max_iterations=5)
+executor.invoke({<span class="s">"input"</span>: <span class="s">"Where is order 4471?"</span>})`,
+  neu:`agent = create_agent(
+    model=<span class="s">"anthropic:claude-sonnet-5"</span>,
+    tools=[lookup_order, search_policy, days_since],
+)
+agent.invoke({<span class="s">"messages"</span>: [
+    {<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Where is order 4471?"</span>}
+]})`,
+  why:'Two objects — one to decide, one to run the loop — collapsed into one. <code>create_agent</code> already returns the runnable loop. Note the input key too: <b>messages</b>, not <code>input</code>.'},
+ {k:"create_react_agent",st:"Deprecated",cls:"dep",
+  old:`<span class="c"># there were once TWO functions with this name.</span>
+<span class="c"># Different signatures. Different packages. Real trap.</span>
+<span class="k">from</span> langchain.agents <span class="k">import</span> create_react_agent
+<span class="k">from</span> langgraph.prebuilt <span class="k">import</span> create_react_agent`,
+  neu:`<span class="k">from</span> langchain.agents <span class="k">import</span> create_agent
+
+<span class="c"># one name, one import path, one signature</span>`,
+  why:'The <code>langgraph.prebuilt</code> one is what most 2025 tutorials use, and it still runs — but it is the <b>previous generation</b>. Middleware, structured output and the current defaults all live on <code>create_agent</code>.'},
+ {k:"ConversationBufferMemory",st:"Moved to langchain-classic",cls:"dep",
+  old:`<span class="k">from</span> langchain.memory <span class="k">import</span> ConversationBufferMemory
+<span class="k">from</span> langchain.chains <span class="k">import</span> ConversationChain
+
+memory = ConversationBufferMemory()
+chain = ConversationChain(llm=llm, memory=memory)`,
+  neu:`<span class="k">from</span> langgraph.checkpoint.memory <span class="k">import</span> InMemorySaver
+
+agent = create_agent(
+    model=<span class="s">"anthropic:claude-sonnet-5"</span>,
+    tools=tools,
+    checkpointer=InMemorySaver(),
+)
+agent.invoke(payload, {<span class="s">"configurable"</span>: {<span class="s">"thread_id"</span>: <span class="s">"customer-4471"</span>}})`,
+  why:'Memory stopped being an object you attach and became <b>state the runtime saves</b>, keyed by thread. That is why it survives a restart, serves a thousand customers at once, and can be rewound — none of which a buffer in a Python process could do.'},
+ {k:"LLMChain",st:"Moved to langchain-classic",cls:"dep",
+  old:`<span class="k">from</span> langchain.chains <span class="k">import</span> LLMChain
+
+chain = LLMChain(llm=llm, prompt=prompt)
+chain.run(question=<span class="s">"Where is order 4471?"</span>)`,
+  neu:`<span class="k">from</span> langchain_core.output_parsers <span class="k">import</span> StrOutputParser
+
+chain = prompt | model | StrOutputParser()
+chain.invoke({<span class="s">"question"</span>: <span class="s">"Where is order 4471?"</span>})`,
+  why:'The replacement is <b>not</b> an agent. LCEL piping is current and correct — <code>LLMChain</code> was only a clumsier way of writing the same fixed pipeline. Fixed work still deserves a chain.'}
+];
+let migK=MIG[0].k;
+function drawMig(){
+  $('migPick').innerHTML=MIG.map(m=>
+    `<button class="qchip ${migK===m.k?'on':''}" data-k="${m.k}">${m.k}</button>`).join('');
+  $('migPick').querySelectorAll('.qchip').forEach(b=>b.onclick=()=>{migK=b.dataset.k;drawMig();});
+  const m=MIG.find(x=>x.k===migK);
+  $('migOut').innerHTML=
+    `<span class="status ${m.cls}">${m.st}</span>
+     <div class="blk old"><div class="bl">what the tutorial shows you</div><pre>${m.old}</pre></div>
+     <div class="blk new"><div class="bl">what to write instead</div><pre>${m.neu}</pre></div>
+     <div class="why">${m.why}</div>`;
+}
+drawMig();
+
+/* ---------- definition wires ---------- */
+function drawWires(){
+  document.querySelectorAll('.lab').forEach(lab=>{
+    const svg=lab.querySelector('.wl'); if(!svg) return;
+    if(getComputedStyle(svg).display==='none'){svg.innerHTML='';return;}
+    const lr=lab.getBoundingClientRect();
+    svg.setAttribute('viewBox',`0 0 ${lr.width} ${lr.height}`);
+    let out='';
+    lab.querySelectorAll('.def[data-term]').forEach(def=>{
+      const term=document.getElementById(def.dataset.term); if(!term) return;
+      const tr=term.getBoundingClientRect(), dr=def.getBoundingClientRect();
+      const x1=tr.right-lr.left+3, y1=tr.top-lr.top+tr.height/2;
+      const x2=dr.left-lr.left-3,  y2=dr.top-lr.top+18;
+      const mid=(x1+x2)/2;
+      out+=`<path d="M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}"/>`
+         + `<circle cx="${x1}" cy="${y1}" r="3.4"/><circle cx="${x2}" cy="${y2}" r="3.4"/>`;
+    });
+    svg.innerHTML=out;
+  });
+}
+addEventListener('load',drawWires);
+addEventListener('resize',drawWires);
+if(window.ResizeObserver){ new ResizeObserver(drawWires).observe(document.body); }
+setTimeout(drawWires,400);
+
+</script>
+</body>
+</html>

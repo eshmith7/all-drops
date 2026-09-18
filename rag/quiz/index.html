@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Engineering — Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7EFE2;--card:#FFFBF3;--line:#E7D8C4;--ink:#4A3830;--dim:#A08B79;
+  --clay:#B4785B;--clay-deep:#9A5F44;--ok:#7FA37A;--ok-bg:#EEF3EA;--bad:#C97B7B;--bad-bg:#F7EAEA;
+  --mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;
+  display:flex;justify-content:center;padding:22px 14px 44px;min-height:100vh}
+.app{width:100%;max-width:480px}
+header{text-align:center;margin-bottom:16px}
+.hero{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.hero[hidden]{display:none}
+.eyebrow{font-size:.66rem;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--clay);margin-bottom:6px}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:1.95rem;line-height:1.05}
+h1 .accent{color:var(--clay)}
+.sub{font-size:.85rem;color:var(--dim);margin-top:6px;font-weight:600}
+.orn{color:var(--clay);font-size:.9rem;margin-top:8px;letter-spacing:.5em}
+.dots{display:flex;justify-content:center;gap:8px;margin:16px 0 18px}
+.dots .dot{width:10px;height:10px;border-radius:50%;background:var(--line);transition:all .3s}
+.dots .dot.current{background:var(--clay);transform:scale(1.35)}
+.dots .dot.ok{background:var(--ok)}.dots .dot.bad{background:var(--bad)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 20px;box-shadow:0 6px 24px rgba(122,90,64,.08)}
+.qmeta{display:flex;justify-content:space-between;font-size:.68rem;font-weight:800;color:var(--dim);letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px}
+.art{display:block;margin:0 auto 12px;max-width:100%;height:auto}
+.qtext{font-family:'Fraunces',serif;font-weight:700;font-size:1.18rem;line-height:1.36;min-height:74px;margin-bottom:13px}
+.qtext .caret{display:inline-block;width:3px;height:1em;background:var(--clay);vertical-align:-2px;animation:blink 1s steps(1) infinite;margin-left:2px;border-radius:2px}
+@keyframes blink{50%{opacity:.1}}
+.opts{display:grid;gap:10px}
+.opt{text-align:left;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);
+  border-radius:14px;padding:14px 15px;cursor:pointer;line-height:1.45;font-size:.92rem;font-weight:600;
+  transition:all .15s;display:flex;gap:11px;align-items:flex-start}
+.opt:hover{border-color:var(--clay);background:#FBF3E7}
+.opt .key{font-size:.72rem;font-weight:800;color:var(--clay);background:#F2E4D4;border-radius:7px;padding:2px 7px;margin-top:2px;flex-shrink:0}
+.opt.correct{background:var(--ok-bg);border-color:var(--ok)}.opt.correct .key{color:#fff;background:var(--ok)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}.opt.wrong .key{color:#fff;background:var(--bad)}
+.opt:disabled{cursor:default}.opt:disabled:not(.correct):not(.wrong){opacity:.45}
+.explain{margin-top:14px;border-left:3px solid var(--clay);background:#FBF3E7;border-radius:0 12px 12px 0;
+  padding:13px 15px;font-size:.87rem;line-height:1.55;color:#6B5647;display:none}
+.explain b{color:var(--clay-deep)}
+.explain code{font-family:var(--mono);font-size:.79rem;background:#F2E4D4;padding:1px 5px;border-radius:5px}
+.next{margin-top:16px;width:100%;font-family:'Fraunces',serif;font-weight:900;font-size:1.02rem;color:#FFFBF3;
+  background:var(--clay);border:none;border-radius:14px;padding:15px;cursor:pointer;display:none}
+.next:hover{background:var(--clay-deep)}
+.score{text-align:center;display:none}
+.score .bloom{font-size:2.2rem;margin-bottom:4px}
+.score h2{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;margin-bottom:4px}
+.score .big{font-family:'Fraunces',serif;font-weight:900;font-size:3rem;color:var(--clay);margin:8px 0 2px}
+.score .grade{color:var(--dim);font-size:.92rem;font-weight:700;margin-bottom:18px;line-height:1.5}
+.score .stats{font-size:.8rem;font-weight:600;color:var(--dim);border-top:1.5px dashed var(--line);
+  border-bottom:1.5px dashed var(--line);padding:12px 0;margin-bottom:18px;line-height:1.9}
+.btnrow{display:grid;gap:10px}
+.ghost{font-weight:800;color:var(--clay);background:none;border:1.5px solid var(--clay);border-radius:14px;padding:14px;cursor:pointer;font-size:.95rem}
+footer{margin-top:18px;text-align:center;font-size:.68rem;font-weight:700;color:#BCA893;letter-spacing:.14em;text-transform:uppercase}
+.sticker{position:fixed;z-index:6;cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(0 6px 14px rgba(122,90,64,.18))}
+.sticker:active{cursor:grabbing}
+.sticker .in{display:inline-block;animation:bob var(--dur,6s) ease-in-out var(--del,0s) infinite alternate}
+.sticker.dragging{z-index:70}.sticker.dragging .in{animation-play-state:paused}
+@keyframes bob{from{transform:translateY(0) rotate(var(--rot,-4deg))}to{transform:translateY(-12px) rotate(calc(var(--rot,-4deg) + 4deg))}}
+.st-e .in{font-size:1.9rem;line-height:1;background:var(--card);border:3px solid #fff;border-radius:20px;padding:10px 12px;box-shadow:0 0 0 1.5px var(--line) inset}
+.st-e.sm .in{font-size:1.45rem;padding:8px 10px;border-radius:16px}
+.st-t .in{font-family:var(--mono);font-weight:500;font-size:.82rem;padding:9px 14px;border-radius:12px;border:3px solid #fff}
+.st-t.sm .in{font-size:.73rem;padding:7px 11px}
+.st-m .in{font-family:'Permanent Marker',cursive;font-size:1rem}
+.t-clay .in{background:var(--clay);color:#FFF6E9}
+.t-sage .in{background:var(--ok);color:#F4F8F1}
+.t-ink .in{background:var(--ink);color:#F7EFE2}
+.t-cream .in{background:var(--card);color:var(--clay-deep);box-shadow:0 0 0 1.5px var(--line) inset}
+@media(max-width:1080px){.sticker{display:none}}
+body,button,.opt,.dot{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='2.5' width='12' height='16' rx='2' fill='%23FFFBF3' stroke='%23B4785B' stroke-width='1.8'/%3E%3Cpath d='M5.5 7h6M5.5 10h6M5.5 13h3' stroke='%23B4785B' stroke-width='1.4' stroke-linecap='round'/%3E%3Ccircle cx='15.5' cy='14.5' r='5' fill='none' stroke='%239A5F44' stroke-width='1.8'/%3E%3Cpath d='M19.2 18.2L22 21' stroke='%239A5F44' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 4 3, auto}
+.trail{position:fixed;pointer-events:none;z-index:999;color:var(--clay);font-family:var(--mono);font-weight:500;user-select:none}
+@media(prefers-reduced-motion:reduce){.sticker .in,.qtext .caret{animation:none}}
+</style>
+</head>
+<body>
+<div class="sticker st-e"    style="left:4%;top:14%;--rot:-6deg;--dur:5.4s"><span class="in">🔍</span></div>
+<div class="sticker st-e sm" style="left:10%;top:40%;--rot:5deg;--dur:6.2s;--del:.4s"><span class="in">🧩</span></div>
+<div class="sticker st-e"    style="left:5%;top:68%;--rot:4deg;--dur:5.8s;--del:.9s"><span class="in">📄</span></div>
+<div class="sticker st-t sm t-clay" style="left:3%;top:28%;--rot:-8deg;--dur:5.6s"><span class="in">rank 7 → rank 1</span></div>
+<div class="sticker st-t sm t-sage" style="left:9%;top:56%;--rot:6deg;--dur:6s;--del:.6s"><span class="in">k = 60</span></div>
+<div class="sticker st-e sm" style="right:9%;top:16%;--rot:6deg;--dur:5.5s;--del:.3s"><span class="in">⚖️</span></div>
+<div class="sticker st-e"    style="right:4%;top:44%;--rot:-5deg;--dur:6.4s;--del:.7s"><span class="in">🎯</span></div>
+<div class="sticker st-e sm" style="right:10%;top:72%;--rot:3deg;--dur:5.2s"><span class="in">⚠️</span></div>
+<div class="sticker st-t sm t-cream" style="right:3%;top:30%;--rot:7deg;--dur:5.9s;--del:.5s"><span class="in">hybrid by default</span></div>
+<div class="sticker st-t sm t-ink st-m" style="right:5%;top:60%;--rot:-6deg;--dur:6.1s;--del:.8s"><span class="in">similarity ≠ correctness</span></div>
+
+<div class="app">
+  <header>
+    <img class="hero" id="hero" alt="" hidden>
+    <div class="eyebrow">Daily Drop · Quiz</div>
+    <h1>Ten questions on<br><span class="accent">making retrieval work.</span></h1>
+    <div class="sub">10 questions · index → retrieve → rerank → generate</div>
+    <div class="orn">❀ ❀ ❀</div>
+  </header>
+  <div class="dots" id="dots"></div>
+  <main class="card" id="card">
+    <div class="qmeta"><span id="qnum">Question 1 of 10</span><span id="qtopic"></span></div>
+    <div id="artbox"></div>
+    <p class="qtext" id="qtext" aria-live="polite"></p>
+    <div class="opts" id="opts"></div>
+    <div class="explain" id="explain"></div>
+    <button class="next" id="next">Next question</button>
+    <div class="score" id="score">
+      <div class="bloom">🔍</div>
+      <h2>All done!</h2>
+      <div class="big" id="finalScore">0/10</div>
+      <div class="grade" id="grade"></div>
+      <div class="stats" id="stats"></div>
+      <div class="btnrow">
+        <button class="next" id="share" style="display:block">Copy my result</button>
+        <button class="ghost" id="retry">Take it again</button>
+      </div>
+    </div>
+  </main>
+  <footer>index · retrieve · rerank · generate · Eshmith Saideep</footer>
+</div>
+<script>
+/* ===== paste your generated image URL between the quotes ===== */
+const HERO_IMAGE="";
+/* ============================================================ */
+if(HERO_IMAGE){const h=document.getElementById("hero");h.src=HERO_IMAGE;h.hidden=false;}
+const C={clay:'#B4785B',ink:'#4A3830',line:'#E7D8C4',cream:'#FFFBF3',sage:'#7FA37A',dim:'#A08B79',bad:'#C97B7B'};
+const ART={
+ split:`<svg class="art" width="300" height="122" viewBox="0 0 300 122">
+  <rect x="6" y="4" width="288" height="46" rx="8" fill="${C.cream}" stroke="${C.clay}" stroke-width="1.6"/>
+  <text x="16" y="17" font-family="Nunito" font-size="7.5" font-weight="800" fill="${C.clay}">CHUNK 12</text>
+  <text x="16" y="32" font-family="JetBrains Mono" font-size="9" fill="${C.ink}">Casual leave is credited at the start</text>
+  <text x="16" y="44" font-family="JetBrains Mono" font-size="9" fill="${C.ink}">of each calendar year. Unused days —</text>
+  <path d="M2 57h296" stroke="${C.bad}" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <rect x="188" y="51" width="108" height="11" fill="${C.cream}"/>
+  <text x="294" y="59" text-anchor="end" font-family="Nunito" font-size="7.5" font-weight="800" fill="${C.bad}">✂ CHUNK BOUNDARY</text>
+  <rect x="6" y="62" width="288" height="46" rx="8" fill="${C.cream}" stroke="${C.line}" stroke-width="1.6"/>
+  <text x="16" y="75" font-family="Nunito" font-size="7.5" font-weight="800" fill="${C.dim}">CHUNK 13</text>
+  <text x="16" y="90" font-family="JetBrains Mono" font-size="9" fill="${C.dim}">— do not carry forward. Earned leave</text>
+  <text x="16" y="102" font-family="JetBrains Mono" font-size="9" fill="${C.dim}">is governed by section 5.2.</text>
+  <text x="6" y="119" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">retrieve one, and half the answer is missing</text>
+ </svg>`,
+ clusters:`<svg class="art" width="300" height="116" viewBox="0 0 300 116">
+  <ellipse cx="112" cy="58" rx="76" ry="38" fill="#F2E4D4"/>
+  <ellipse cx="196" cy="60" rx="76" ry="38" fill="#EEF3EA" opacity=".85"/>
+  ${[[74,46],[96,58],[70,70],[92,78],[116,50]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${C.clay}"/>`).join('')}
+  ${[[188,48],[210,62],[194,76],[220,50],[234,68]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${C.sage}"/>`).join('')}
+  <path d="M152 38l7 9-7 9-7-9z" fill="${C.ink}"/>
+  <text x="152" y="26" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.ink}">your question</text>
+  <text x="76" y="110" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.clay}">casual leave</text>
+  <text x="228" y="110" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="#3F6B47">earned leave</text>
+  <text x="152" y="110" text-anchor="middle" font-family="Nunito" font-size="8" font-weight="800" fill="${C.dim}">worded alike</text>
+ </svg>`,
+ rank:`<svg class="art" width="300" height="110" viewBox="0 0 300 110">
+  <text x="6" y="10" font-family="Nunito" font-size="8" font-weight="800" fill="${C.dim}">RESULTS FOR “HOW MANY CASUAL LEAVES DO I GET?”</text>
+  ${[[1,'Earned leave — carry-forward rule'],[2,'Leave encashment on exit'],[3,'Public holiday calendar']]
+    .map((r,i)=>`<rect x="6" y="${16+i*17}" width="288" height="15" rx="4" fill="${C.cream}" stroke="${i===0?C.bad:C.line}" stroke-width="1.4"/>
+   <text x="13" y="${27+i*17}" font-family="JetBrains Mono" font-size="8.5" fill="${C.dim}">${r[0]}</text>
+   <text x="28" y="${27+i*17}" font-family="Nunito" font-size="9" font-weight="700" fill="${i===0?C.bad:C.ink}">${r[1]}</text>`).join('')}
+  ${[74,79,84].map(y=>`<circle cx="17" cy="${y}" r="1.3" fill="${C.dim}"/>`).join('')}
+  <rect x="6" y="86" width="288" height="17" rx="5" fill="#EEF3EA" stroke="${C.sage}" stroke-width="1.8"/>
+  <text x="13" y="98" font-family="JetBrains Mono" font-size="8.5" fill="#3F6B47">7</text>
+  <text x="28" y="98" font-family="Nunito" font-size="9" font-weight="800" fill="#3F6B47">Casual leave — accrual and carry-over</text>
+  <text x="288" y="98" text-anchor="end" font-family="Nunito" font-size="10" font-weight="800" fill="#3F6B47">✓</text>
+ </svg>`,
+ fusion:`<svg class="art" width="300" height="134" viewBox="0 0 300 134">
+  <text x="4" y="10" font-family="Nunito" font-size="8" font-weight="800" fill="${C.clay}">DENSE</text>
+  ${['earned leave','encashment','casual leave'].map((t,i)=>`<rect x="4" y="${14+i*16}" width="112" height="14" rx="4" fill="${C.cream}" stroke="${C.line}" stroke-width="1.3"/>
+   <text x="10" y="${24+i*16}" font-family="JetBrains Mono" font-size="8" fill="${i===2?C.clay:C.dim}">${i+1}. ${t}</text>`).join('')}
+  <text x="4" y="76" font-family="Nunito" font-size="8" font-weight="800" fill="${C.clay}">BM25</text>
+  ${['casual leave','leave policy','earned leave'].map((t,i)=>`<rect x="4" y="${80+i*16}" width="112" height="14" rx="4" fill="${C.cream}" stroke="${C.line}" stroke-width="1.3"/>
+   <text x="10" y="${90+i*16}" font-family="JetBrains Mono" font-size="8" fill="${i===0?C.clay:C.dim}">${i+1}. ${t}</text>`).join('')}
+  <path d="M118 36 Q130 40 132 58" fill="none" stroke="${C.line}" stroke-width="1.8"/>
+  <path d="M118 94 Q130 90 132 76" fill="none" stroke="${C.line}" stroke-width="1.8"/>
+  <circle cx="134" cy="67" r="10" fill="${C.cream}" stroke="${C.clay}" stroke-width="1.8"/>
+  <text x="134" y="71" text-anchor="middle" font-family="Nunito" font-size="11" font-weight="800" fill="${C.clay}">+</text>
+  <path d="M146 67h12" stroke="${C.clay}" stroke-width="1.8"/><path d="M158 67l-6-4v8z" fill="${C.clay}"/>
+  <text x="162" y="34" font-family="Nunito" font-size="8" font-weight="800" fill="${C.clay}">RRF · k = 60 · RANKS, NOT SCORES</text>
+  ${['casual leave','earned leave','encashment'].map((t,i)=>`<rect x="162" y="${40+i*16}" width="134" height="14" rx="4" fill="${i===0?'#EEF3EA':C.cream}" stroke="${i===0?C.sage:C.line}" stroke-width="1.4"/>
+   <text x="168" y="${50+i*16}" font-family="JetBrains Mono" font-size="8" fill="${i===0?'#3F6B47':C.dim}">${i+1}. ${t}</text>`).join('')}
+  <text x="162" y="104" font-family="JetBrains Mono" font-size="8" fill="${C.dim}">score = Σ 1 / (60 + rank)</text>
+ </svg>`,
+ funnel:`<svg class="art" width="300" height="106" viewBox="0 0 300 106">
+  <text x="150" y="10" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">CROSS-ENCODER RERANKER · ROUGHLY 80–150ms</text>
+  <path d="M10 18 L10 82 L290 62 L290 38 Z" fill="#F2E4D4" stroke="${C.clay}" stroke-width="1.6" stroke-linejoin="round"/>
+  ${[...Array(25)].map((_,i)=>`<circle cx="${22+(i%5)*12}" cy="${28+Math.floor(i/5)*11}" r="3" fill="${C.dim}"/>`).join('')}
+  ${[42,50,58].map(y=>`<circle cx="${262}" cy="${y}" r="3.4" fill="${C.sage}"/>`).join('')}
+  <text x="10" y="98" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.clay}">retrieve ~25, wide and cheap</text>
+  <text x="290" y="98" text-anchor="end" font-family="Nunito" font-size="8.5" font-weight="800" fill="#3F6B47">keep ~3</text>
+ </svg>`,
+ middle:`<svg class="art" width="300" height="112" viewBox="0 0 300 112">
+  <text x="18" y="10" font-family="Nunito" font-size="8" font-weight="800" fill="${C.dim}">HOW WELL THE MODEL USES A CHUNK</text>
+  <line x1="18" y1="84" x2="290" y2="84" stroke="${C.line}" stroke-width="1.6"/>
+  <line x1="18" y1="16" x2="18" y2="84" stroke="${C.line}" stroke-width="1.6"/>
+  <path d="M26 26 C82 42 104 68 154 68 C204 68 226 42 282 26" fill="none" stroke="${C.clay}" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="154" cy="68" r="4.6" fill="${C.bad}"/>
+  <text x="154" y="81" text-anchor="middle" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.bad}">buried here</text>
+  <text x="24" y="96" font-family="Nunito" font-size="8" font-weight="700" fill="${C.dim}">start of context</text>
+  <text x="288" y="96" text-anchor="end" font-family="Nunito" font-size="8" font-weight="700" fill="${C.dim}">end of context</text>
+  <text x="18" y="109" font-family="Nunito" font-size="8" font-weight="800" fill="${C.clay}">lost in the middle · Liu et al., 2023</text>
+ </svg>`,
+ meters:`<svg class="art" width="300" height="100" viewBox="0 0 300 100">
+  <text x="4" y="13" font-family="Nunito" font-size="9" font-weight="800" fill="${C.ink}">Recall@5</text>
+  <rect x="4" y="19" width="292" height="17" rx="8.5" fill="${C.cream}" stroke="${C.line}" stroke-width="1.4"/>
+  <rect x="4" y="19" width="292" height="17" rx="8.5" fill="${C.sage}"/>
+  <text x="286" y="32" text-anchor="end" font-family="Nunito" font-size="9" font-weight="800" fill="#F4F8F1">the right chunk is in there</text>
+  <text x="4" y="58" font-family="Nunito" font-size="9" font-weight="800" fill="${C.ink}">Faithfulness</text>
+  <rect x="4" y="64" width="292" height="17" rx="8.5" fill="${C.cream}" stroke="${C.bad}" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <text x="150" y="77" text-anchor="middle" font-family="Nunito" font-size="9" font-weight="800" fill="${C.bad}">never measured</text>
+  <text x="4" y="96" font-family="Nunito" font-size="8.5" font-weight="800" fill="${C.dim}">perfect retrieval, unchecked answers</text>
+ </svg>`
+};
+const QUESTIONS=[
+ {topic:"indexing",art:'split',q:"Why is chunking the highest-leverage decision in the whole pipeline?",
+  opts:["It sets the index file size, and a smaller index retrieves faster",
+        "The chunk is the unit of retrieval — an answer split across two chunks can never be retrieved whole",
+        "It is where you set the 20% overlap, and overlap is what makes retrieval work",
+        "Chunks are stored alphabetically, so where you cut decides what gets read first"],a:1,
+  ex:"<b>The chunk is the unit of retrieval.</b> In our handbook the carry-over rule sits in a table split across two chunks, so no retriever — however good — can hand back a complete answer. Structure-aware splitting at roughly 256–512 tokens is the baseline; parent-document retrieval (index the small chunk, return the bigger parent) is the standard upgrade."},
+ {topic:"indexing",q:"What does a vector store's ANN index actually trade away?",
+  opts:["Embedding quality — ANN shortens every vector, so some meaning is lost",
+        "Your metadata — an ANN index can only hold raw vectors",
+        "A little recall, for a lot of speed — it can miss a true neighbour now and then",
+        "Nothing measurable — approximate is just the vendor's word for the same exact search"],a:2,
+  ex:"<b>ANN</b> — approximate nearest neighbour, usually HNSW — gives up a little recall because exact search is simply too slow at scale. Worth knowing precisely because a chunk that never makes the candidate list cannot be reranked back in later."},
+ {topic:"retrieval",art:'clusters',q:"You ask about casual leave. The system returns the earned-leave paragraph and answers confidently. Why?",
+  opts:["The two policies are worded almost identically, so they sit close together in embedding space",
+        "The 2023 handbook is still indexed, so an older chunk outranked the current one",
+        "Your top-k was too small — raise it to 50 and the right chunk arrives",
+        "Dense retrieval skips short paragraphs, and casual leave is the shorter section"],a:0,
+  ex:"<b>Embeddings measure similarity, not correctness.</b> Casual leave and earned leave are written in nearly the same language, so their vectors land next to each other and the model quotes the earned-leave carry-forward rule without hesitating. This one failure is what the rest of the pipeline exists to fix."},
+ {topic:"retrieval",art:'rank',q:"What does BM25 still beat dense retrieval at?",
+  opts:["Nothing — keyword search is legacy now, and dense embeddings cover every case",
+        "Paraphrase and synonyms — it matches meaning, which vectors only approximate",
+        "Whole documents, because it reads the full file instead of chunks",
+        "Exact strings — policy names, IDs, acronyms, code symbols and rare terms"],a:3,
+  ex:"<b>Hybrid search is the default now, not an optimisation.</b> Dense retrieval catches paraphrase; BM25 catches the exact phrase the user typed, and <code>casual leave</code> is exactly that kind of phrase. Treating keyword search as legacy is 2023 advice, and it is why rare policy names quietly go missing."},
+ {topic:"retrieval",art:'fusion',q:"In Reciprocal Rank Fusion, what actually gets combined?",
+  opts:["The similarity scores, once both retrievers are normalised onto a 0–1 scale",
+        "The ranks from each list — score = Σ 1/(k + rank), with k = 60 — so no score calibration is needed",
+        "The embeddings, averaged into one hybrid vector per chunk",
+        "The chunks themselves, glued into one long passage before generation"],a:1,
+  ex:"<b>RRF is rank-based, not score-based.</b> A BM25 score and a cosine similarity live on completely different scales, so fusing positions instead of values sidesteps calibration entirely. <code>k=60</code> is the near-universal default."},
+ {topic:"optimization",art:'funnel',q:"Why run the cross-encoder reranker second, over a shortlist, instead of over the whole corpus?",
+  opts:["It is the cheap step, so you save the expensive vector search for last",
+        "It needs the retriever's similarity scores as its input, so it cannot go first",
+        "It reads query and chunk together — far more accurate, and far too slow to run over everything",
+        "Rerankers accept exactly 25 documents; that is a hard limit"],a:2,
+  ex:"<b>Retrieve wide and cheap, then narrow precisely.</b> A cross-encoder scores the query and the chunk jointly rather than comparing two fixed vectors, which is why it judges so much better — and why it cannot run over a whole corpus. A ~25 → ~3 funnel costs roughly 80–150ms and is usually the best quality-per-effort in the pipeline: in our handbook it lifts the casual-leave chunk from rank 7 to rank 1."},
+ {topic:"optimization",q:"Anthropic's Contextual Retrieval does what to a chunk before embedding it?",
+  opts:["Prepends a short, LLM-written passage that situates the chunk inside its document",
+        "Strips headings and boilerplate so only the meaningful sentences are embedded",
+        "Overlaps it 20% with its neighbours so no sentence is ever cut in half",
+        "Translates it into English and back, to normalise the phrasing"],a:0,
+  ex:"<b>A chunk read alone has lost the document it came from.</b> Contextual Retrieval prepends 50–100 tokens of generated context — “this is from the 2025 leave policy, section 4, on casual leave accrual” — before embedding. Anthropic reports retrieval failures cut 35% with contextual embeddings, 49% adding contextual BM25 and 67% adding reranking, and recommends it for knowledge bases over roughly 200K tokens."},
+ {topic:"optimization",art:'middle',q:"Your answers got worse after you raised top-k from 5 to 25. The most likely explanation?",
+  opts:["The extra chunks overflowed the context window and were silently dropped",
+        "Embeddings degrade as the candidate list grows; re-embed at a higher dimension",
+        "Past top-k 10 the store quietly switches from cosine to Euclidean distance",
+        "Lost in the middle — the extra chunks buried the right one"],a:3,
+  ex:"<b>Lost in the middle</b> (Liu et al., 2023) is a real, still-unsolved position bias: models attend best to the start and end of a long context and genuinely miss what sits in between. Bigger context windows have not fixed it. Retrieve fewer, better chunks and put the strongest first."},
+ {topic:"evaluation",art:'meters',q:"Recall@5 is 100% on your golden set, yet users still get wrong answers. What does that tell you?",
+  opts:["Your golden set is too small — push it past 500 questions",
+        "Retrieval is fine; the failure is in generation, so measure faithfulness too",
+        "Recall@k is the metric that matters, so the users must be asking badly",
+        "Nothing — recall and answer quality are the same measurement twice"],a:1,
+  ex:"<b>A system can score perfect recall and still answer wrongly.</b> The right chunk was sitting in the context and the model ignored it, mangled it, or topped it up from its own priors. Faithfulness — the share of claims in the answer actually supported by the retrieved context — is the other half of the measurement, and skipping it is the most common evaluation mistake in RAG."},
+ {topic:"evaluation",q:"Which is the soundest golden-set practice?",
+  opts:["A few thousand synthetic questions, never reviewed — volume beats curation",
+        "One headline metric, Recall@k, so the number stays easy to read",
+        "30–100 real questions with known correct sources, human-checked, re-run on every change",
+        "Only the questions that already pass, so the suite stays green in CI"],a:2,
+  ex:"<b>A golden set is 30–100 real questions with known correct sources.</b> Generate the candidates synthetically if you like, but have a human check them, and re-run the whole set in CI on every chunking, embedding or prompt change. Unreviewed synthetic questions test your question generator, not your pipeline."}
+];
+const GRADES=[
+ {min:9,label:"You could debug a retrieval pipeline 🔍"},
+ {min:7,label:"Close — one more pass over rerank and evaluation and it's yours."},
+ {min:4,label:"Good start 🌱 Replay today's drop and try again."},
+ {min:0,label:"All of this is covered across the two sessions — come back after."}
+];
+const dots=document.getElementById('dots'),qnum=document.getElementById('qnum'),qtopic=document.getElementById('qtopic');
+const qtext=document.getElementById('qtext'),optsEl=document.getElementById('opts');
+const artbox=document.getElementById('artbox');
+const explainEl=document.getElementById('explain'),nextBtn=document.getElementById('next'),scoreEl=document.getElementById('score');
+const KEYS=['A','B','C','D'];let i=0,correct=0,results=[],qStart=0,typer=null;
+QUESTIONS.forEach(()=>dots.insertAdjacentHTML('beforeend','<div class="dot"></div>'));
+function typeQ(t){clearInterval(typer);qtext.innerHTML='<span class="caret"></span>';let n=0;
+  typer=setInterval(()=>{n+=2;qtext.innerHTML=t.slice(0,n)+'<span class="caret"></span>';
+    if(n>=t.length){clearInterval(typer);qtext.textContent=t;}},16);}
+function render(){
+  const Q=QUESTIONS[i];
+  document.querySelectorAll('.dots .dot').forEach((d,k)=>{
+    d.className='dot'+(k===i?' current':results[k]===true?' ok':results[k]===false?' bad':'');});
+  qnum.textContent=`Question ${i+1} of ${QUESTIONS.length}`;qtopic.textContent=Q.topic;
+  artbox.innerHTML=Q.art?ART[Q.art]:'';
+  typeQ(Q.q);
+  explainEl.style.display='none';nextBtn.style.display='none';optsEl.innerHTML='';
+  Q.opts.forEach((o,k)=>{const b=document.createElement('button');b.className='opt';
+    b.innerHTML=`<span class="key">${KEYS[k]}</span><span>${o}</span>`;
+    b.addEventListener('click',()=>answer(k));optsEl.appendChild(b);});
+  qStart=performance.now();
+}
+function answer(k){
+  const Q=QUESTIONS[i],secs=((performance.now()-qStart)/1000).toFixed(1),ok=k===Q.a;
+  results[i]=ok;if(ok)correct++;
+  [...optsEl.children].forEach((b,idx)=>{b.disabled=true;
+    if(idx===Q.a)b.classList.add('correct');else if(idx===k&&!ok)b.classList.add('wrong');});
+  explainEl.innerHTML=Q.ex+`<span style="display:block;margin-top:8px;font-size:.72rem;font-weight:700;color:var(--dim)">answered in ${secs}s</span>`;
+  explainEl.style.display='block';nextBtn.style.display='block';
+  nextBtn.textContent=i===QUESTIONS.length-1?'See my score':'Next question';
+  document.querySelectorAll('.dots .dot')[i].className='dot '+(ok?'ok':'bad');nextBtn.focus();
+}
+nextBtn.addEventListener('click',()=>{i++;i<QUESTIONS.length?render():showScore();});
+function showScore(){
+  qnum.parentElement.style.display='none';qtext.style.display='none';
+  artbox.innerHTML='';optsEl.style.display='none';explainEl.style.display='none';nextBtn.style.display='none';
+  const grade=GRADES.find(g=>correct>=g.min).label;
+  document.getElementById('finalScore').textContent=`${correct}/${QUESTIONS.length}`;
+  document.getElementById('grade').textContent=grade;
+  const missed=QUESTIONS.filter((_,k)=>!results[k]).map(q=>q.topic);
+  document.getElementById('stats').innerHTML=
+    `${results.filter(Boolean).length} correct · ${results.filter(r=>r===false).length} to review<br>`+
+    (missed.length?'revisit: '+[...new Set(missed)].join(' · '):'perfect run ❀');
+  scoreEl.style.display='block';
+  document.getElementById('share').onclick=function(){
+    const t=`RAG Engineering — Quiz · ${correct}/${QUESTIONS.length}\n${results.map(r=>r?'🟢':'🟠').join('')}\n${grade}`;
+    navigator.clipboard.writeText(t).then(()=>{this.textContent='Copied ✓';
+      setTimeout(()=>this.textContent='Copy my result',1600);}).catch(()=>{this.textContent=t;});};
+  document.getElementById('retry').onclick=()=>{i=0;correct=0;results=[];scoreEl.style.display='none';
+    qnum.parentElement.style.display='flex';qtext.style.display='block';optsEl.style.display='grid';render();};
+}
+render();
+(function(){const G=['⌕','→','◆','Σ','≈','▸'];let last=0,n=0;
+addEventListener('pointermove',e=>{const now=performance.now();if(now-last<62)return;last=now;
+  const s=document.createElement('span');s.className='trail';s.textContent=G[n++%G.length];
+  s.style.left=(e.clientX-4)+'px';s.style.top=(e.clientY-6)+'px';
+  s.style.fontSize=(.6+Math.random()*.32).toFixed(2)+'rem';document.body.appendChild(s);
+  const dx=(Math.random()-.5)*26,rot=(Math.random()-.5)*40;
+  s.animate([{transform:'translate(0,0) rotate(0) scale(.7)',opacity:.8},
+    {transform:`translate(${dx}px,-22px) rotate(${rot}deg) scale(1)`,opacity:0}],{duration:620,easing:'ease-out'});
+  setTimeout(()=>s.remove(),620);});})();
+document.querySelectorAll('.sticker').forEach(st=>{let sx,sy,ox,oy;
+  st.addEventListener('pointerdown',e=>{e.preventDefault();st.setPointerCapture(e.pointerId);
+    st.classList.add('dragging');const r=st.getBoundingClientRect();
+    st.style.left=r.left+'px';st.style.top=r.top+'px';st.style.right='auto';
+    sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;});
+  st.addEventListener('pointermove',e=>{if(!st.classList.contains('dragging'))return;
+    st.style.left=Math.max(-30,Math.min(innerWidth-50,ox+e.clientX-sx))+'px';
+    st.style.top=Math.max(0,Math.min(innerHeight-40,oy+e.clientY-sy))+'px';});
+  const d=e=>{st.classList.remove('dragging');
+    if(st.hasPointerCapture&&st.hasPointerCapture(e.pointerId))st.releasePointerCapture(e.pointerId);};
+  st.addEventListener('pointerup',d);st.addEventListener('pointercancel',d);});
+</script>
+</body>
+</html>
